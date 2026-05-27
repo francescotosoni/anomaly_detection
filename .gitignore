@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Data and Models
+data/
+RTDE_Python_Client_Library/
+pictures/
+*.npy
+*.pkl
+*.pth
+*.pdf
+
+# IDE
+.vscode/
+.idea/
+
+# Custom ignored scripts
+evaluate.py
+verify_data.py
+check_data.py

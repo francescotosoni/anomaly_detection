@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<rtde_config>
+	<recipe key="out">
+        <-- Timestamp --> 
+		<field name="timestamp" type="DOUBLE"/>
+        <-- Target positions --> 
+		<field name="target_q" type="VECTOR6D"/>
+        <-- Actual positions --> 
+		<field name="actual_q" type="VECTOR6D"/>
+        <-- Target velocities -->
+		<field name="target_qd" type="VECTOR6D"/>
+        <-- Actual velocities -->
+		<field name="actual_qd" type="VECTOR6D"/>
+        <-- Target accelerations -->
+		<field name="target_qdd" type="VECTOR6D"/>
+        <-- Target currents -->
+		<field name="target_current" type="VECTOR6D"/>
+        <-- Actual currents -->
+		<field name="actual_current" type="VECTOR6D"/>
+        <-- Actual temperatures -->
+		<field name="joint_temperatures" type="VECTOR6D"/>
+	</recipe>
+</rtde_config>
