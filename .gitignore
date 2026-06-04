@@ -13,6 +13,9 @@ pictures/
 *.pkl
 *.pth
 *.pdf
+*.png
+*.jpg
+*.jpeg
 
 # IDE
 .vscode/
