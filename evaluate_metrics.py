@@ -2,20 +2,36 @@ import torch
 import torch.nn as nn
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import joblib
 import glob
 import os
 import time
-from sklearn.metrics import classification_report, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, precision_recall_curve, auc
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from train_CNN import CNNAutoencoder
 from train_LSTM import LSTMAutoencoder
+from train_MLP import MLPAutoencoder
+from train_Transformer import TransformerAutoencoder
 
 # --- CONFIGURATION ---
 BASE_DIR = r"C:\Users\toso9\ur5_data_collection\data\data\stochastic_PnP"
 WINDOW_SIZE = 50
-STEP_SIZE = 1  # <-- RETURNED TO 1: Frame resolution as per Graabæk
+STEP_SIZE = 1  
+PERSISTENCE_WINDOWS = 200  # 200 finestre = 2 secondi di allarme su MCU (a 100Hz)
+
+# Modelli parametri
 HIDDEN_DIM_LSTM = 32
+N_LAYERS_LSTM = 2
+DROPOUT_LSTM = 0.2
+BOTTLENECK_DIM_MLP = 32
+
+# Transformer parametri
+D_MODEL_TR = 64
+NHEAD_TR = 2
+NUM_ENCODER_LAYERS_TR = 2
+NUM_DECODER_LAYERS_TR = 2
+DIM_FEEDFORWARD_TR = 128
+BOTTLENECK_DIM_TR = 32
+DROPOUT_TR = 0.1
 
 FEATURES = [
     'actual_current_0', 'actual_current_1', 'actual_current_2', 
@@ -26,22 +42,50 @@ FEATURES = [
     'actual_TCP_force_3', 'actual_TCP_force_4', 'actual_TCP_force_5'
 ]
 
-# Healthy and Anomalous categories
-NORMAL_CLASS = "normal"
 ANOMALY_CLASSES = [
     "push", "tcp_wrench", "drop_object", "change_weight", 
     "force_stop", "outside_box", "scale_speed"
 ]
 
-def get_files(category, max_files=None):
+def get_anomaly_files(category, max_files=None):
     folder = os.path.join(BASE_DIR, category)
-    # Recursively find CSVs
     files = glob.glob(os.path.join(folder, "*.csv")) + glob.glob(os.path.join(folder, "test", "*.csv"))
     if max_files:
         files = files[:max_files]
     return files
 
-def extract_windows(df, scaler, file_path=""):
+def apply_point_adjustment(y_true, y_pred, y_errors):
+    """Academic Benchmark adjustment."""
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+    y_errors = np.array(y_errors)
+    
+    y_pred_adj = np.copy(y_pred)
+    y_errors_adj = np.copy(y_errors)
+    
+    diff = np.diff(np.concatenate(([0], y_true, [0])))
+    starts = np.where(diff == 1)[0]
+    ends = np.where(diff == -1)[0]
+    
+    for s, e in zip(starts, ends):
+        if np.any(y_pred[s:e] == 1):
+            y_pred_adj[s:e] = 1
+            y_errors_adj[s:e] = np.max(y_errors[s:e])
+            
+    return y_pred_adj.tolist(), y_errors_adj.tolist()
+
+def apply_alarm_persistence(y_pred, persistence=PERSISTENCE_WINDOWS):
+    """Simulates MCU behavior: if alarm triggers, it stays active for `persistence` windows."""
+    y_pred_pers = np.copy(y_pred)
+    active_until = -1
+    for i in range(len(y_pred)):
+        if y_pred[i] == 1:
+            active_until = i + persistence
+        if i <= active_until:
+            y_pred_pers[i] = 1
+    return y_pred_pers.tolist()
+
+def extract_anomalous_windows(df, scaler, file_path=""):
     full_df = df.dropna(subset=FEATURES)
     data = full_df[FEATURES].values
     
@@ -52,10 +96,6 @@ def extract_windows(df, scaler, file_path=""):
         anom_indices = np.where(bits == 32)[0]
         if len(anom_indices) > 0:
             first_anom_idx = anom_indices[0]
-            
-            # Apply anomaly extension based on type (as described in Graabæk paper)
-            # - Push: only during contact (bits == 32).
-            # - Drop / Scale speed / Long wait etc: from trigger point onwards.
             if "push" in file_path or "tcp_wrench" in file_path:
                 hardware_labels[bits == 32] = 1
             else:
@@ -73,200 +113,288 @@ def extract_windows(df, scaler, file_path=""):
         
     return np.array(windows), np.array(window_labels)
 
-def evaluate_files(model, model_type, files, scaler, device, threshold, is_anomaly=False):
-    file_predictions = []
-    file_true_labels = []
-    
-    window_predictions_all = []
-    window_true_labels_all = []
-    window_errors_all = []
-
+def evaluate_test_set_normal(model, model_type, X_test_normal_tensor, device, threshold):
+    model.eval()
     criterion = nn.MSELoss(reduction='none')
     
+    with torch.no_grad():
+        if model_type == "CNN":
+            t_input = X_test_normal_tensor.transpose(1, 2)
+            recon = model(t_input)
+            loss = criterion(recon, t_input)
+            errors = loss.mean(dim=2).max(dim=1)[0].cpu().numpy()
+        else:
+            t_input = X_test_normal_tensor
+            recon = model(t_input)
+            loss = criterion(recon, t_input)
+            errors = loss.mean(dim=1).max(dim=1)[0].cpu().numpy()
+            
+    y_true = [0] * len(errors)
+    y_pred = [1 if e > threshold else 0 for e in errors]
+    return y_true, y_pred, errors
+
+def evaluate_anomalous_files(model, model_type, files, scaler, device, threshold):
+    w_true_all = []
+    w_pred_all = []
+    w_err_all = []
+    
     model.eval()
+    criterion = nn.MSELoss(reduction='none')
     
     for f in files:
         df = pd.read_csv(f, sep=' ')
-        windows, w_labels = extract_windows(df, scaler, file_path=f)
-        if len(windows) == 0:
-            continue
-            
+        windows, w_labels = extract_anomalous_windows(df, scaler, file_path=f)
+        if len(windows) == 0: continue
+        
         data_tensor = torch.tensor(windows, dtype=torch.float32).to(device)
         if model_type == "CNN":
             data_tensor = data_tensor.transpose(1, 2)
             
         with torch.no_grad():
-            reconstruction = model(data_tensor)
-            loss = criterion(reconstruction, data_tensor)
-            
+            recon = model(data_tensor)
+            loss = criterion(recon, data_tensor)
             if model_type == "CNN":
                 errors = loss.mean(dim=2).max(dim=1)[0].cpu().numpy()
             else:
                 errors = loss.mean(dim=1).max(dim=1)[0].cpu().numpy()
-            
-        PERSISTENCE = 1 # No debouncing filter to challenge strict Window-Level
-        is_pred_file_anomaly = 0
-        consecutive = 0
-        
-        w_preds = []
-        # Graabxk paper: calculate window performance where PR curves aren't heavily debounced
-        # We'll just collect errors for raw PR curve
-        for err in errors:
-            if err > threshold:
-                consecutive += 1
-                w_pred = 1 if consecutive >= PERSISTENCE else 0
-            else:
-                consecutive = 0
-                w_pred = 0
                 
-            w_preds.append(w_pred)    
-            if w_pred == 1:
-                is_pred_file_anomaly = 1
-                
-        file_predictions.append(is_pred_file_anomaly)
-        file_true_labels.append(1 if is_anomaly else 0)
+        w_err_all.extend(errors)
+        w_true_all.extend(w_labels)
         
-        window_true_labels_all.extend(w_labels)
-        window_predictions_all.extend(w_preds)
-        window_errors_all.extend(errors)
-    
-    return file_true_labels, file_predictions, window_true_labels_all, window_predictions_all, window_errors_all
+        # We compute predictions per file so we can apply file-level persistence later if needed
+        # but for simplicity we apply it globally or just pass raw arrays
+        preds = [1 if e > threshold else 0 for e in errors]
+        w_pred_all.extend(preds)
+        
+    return w_true_all, w_pred_all, w_err_all
 
-def apply_point_adjustment(y_true, y_pred, y_errors):
-    """
-    Point-Adjusted (PA) Metric for Time-Series Anomaly Detection.
-    If a continuous anomalous segment (y_true == 1) contains AT LEAST ONE frame predicted as anomalous (y_pred == 1),
-    then the ENTIRE segment is considered DETECTED (false negatives within the segment are cancelled out).
-    Adapted also for errors (ROC-AUC PA) by "spreading" the maximum recorded error.
-    """
-    y_true = np.array(y_true)
-    y_pred = np.array(y_pred)
-    y_errors = np.array(y_errors)
-    
-    y_pred_adj = np.copy(y_pred)
-    y_errors_adj = np.copy(y_errors)
-    
-    # Identify start and end of anomalous segments (1)
-    diff = np.diff(np.concatenate(([0], y_true, [0])))
-    starts = np.where(diff == 1)[0]
-    ends = np.where(diff == -1)[0]
-    
-    for s, e in zip(starts, ends):
-        if np.any(y_pred[s:e] == 1):
-            # If alarm triggers, the whole segment is considered correct and known
-            y_pred_adj[s:e] = 1
-            # To not penalize ROC-AUC (which depends on errors, not boolean threshold)
-            # We give the entire segment a 'prob/error' equal to the max observed in that segment
-            max_err_in_segment = np.max(y_errors[s:e])
-            y_errors_adj[s:e] = max_err_in_segment
-            
-    return y_pred_adj.tolist(), y_errors_adj.tolist()
-
-def print_metrics(model_name, y_true_f, y_pred_f, y_true_w, y_pred_w, y_errors_w):
-    # --- File-Level Metrics ---
-    f_acc = accuracy_score(y_true_f, y_pred_f)
-    f_prec = precision_score(y_true_f, y_pred_f, zero_division=0)
-    f_rec = recall_score(y_true_f, y_pred_f, zero_division=0)
-    f_f1 = f1_score(y_true_f, y_pred_f, zero_division=0)
-    
-    y_pred_w_adj, y_errors_w_adj = apply_point_adjustment(y_true_w, y_pred_w, y_errors_w)
-    
-    # --- Window-Level Metrics ---
-    w_acc = accuracy_score(y_true_w, y_pred_w_adj)
-    w_prec = precision_score(y_true_w, y_pred_w_adj, zero_division=0)
-    w_rec = recall_score(y_true_w, y_pred_w_adj, zero_division=0)
-    w_f1 = f1_score(y_true_w, y_pred_w_adj, zero_division=0)
-    
-    # ROC-AUC calculation as done by Graabæk et al.
-    try:
-        w_roc_auc = roc_auc_score(y_true_w, y_errors_w_adj)
-        # Also calculate PR-AUC (desired on unbalanced datasets like WL)
-        precision_curve, recall_curve, _ = precision_recall_curve(y_true_w, y_errors_w_adj)
-        w_pr_auc = auc(recall_curve, precision_curve)
-    except ValueError:
-        w_roc_auc = 0.0
-        w_pr_auc = 0.0
-    
-    print(f"\n=====================================")
+def print_metrics(model_name, y_true_w, y_pred_w, y_errors_w):
+    print(f"\n========================================================")
     print(f"       {model_name.upper()} RESULTS       ")
-    print(f"=====================================")
-    print(f"▶ FILE-LEVEL (Whole Trace)")
-    print(f"  Accuracy:  {f_acc:.4f}")
-    print(f"  Precision: {f_prec:.4f}")
-    print(f"  Recall:    {f_rec:.4f}")
-    print(f"  F1-Score:  {f_f1:.4f}")
+    print(f"========================================================")
     
-    print(f"\n▶ WINDOW-LEVEL (Graabæk's Metric)")
-    print(f"  Accuracy:  {w_acc:.4f}")
-    print(f"  Precision: {w_prec:.4f}")
-    print(f"  Recall:    {w_rec:.4f}")
-    print(f"  F1-Score:  {w_f1:.4f} (Point-Adjusted)")
-    print(f"  ROC-AUC:   {w_roc_auc:.4f} (Point-Adjusted)")
-    print(f"  PR-AUC:    {w_pr_auc:.4f} (Point-Adjusted)")
+    # RAW METRICS
+    w_acc = accuracy_score(y_true_w, y_pred_w)
+    w_prec = precision_score(y_true_w, y_pred_w, zero_division=0)
+    w_rec = recall_score(y_true_w, y_pred_w, zero_division=0)
+    w_f1 = f1_score(y_true_w, y_pred_w, zero_division=0)
+    try: w_roc_auc = roc_auc_score(y_true_w, y_errors_w)
+    except: w_roc_auc = 0.0
+        
+    print(f"[1] RAW METRICS (Strict window-by-window, flawed labeling)")
+    print(f"  Accuracy:  {w_acc:.4f} | Precision: {w_prec:.4f} | Recall: {w_rec:.4f} | F1: {w_f1:.4f} | AUC: {w_roc_auc:.4f}")
     
-    print("\nWindow-Level Confusion Matrix (Point-Adjusted):")
-    print(classification_report(y_true_w, y_pred_w_adj, target_names=["Normal", "Anomaly"]))
+    # ALARM PERSISTENCE METRICS (MCU Simulator)
+    y_pred_pers = apply_alarm_persistence(y_pred_w, PERSISTENCE_WINDOWS)
+    p_acc = accuracy_score(y_true_w, y_pred_pers)
+    p_prec = precision_score(y_true_w, y_pred_pers, zero_division=0)
+    p_rec = recall_score(y_true_w, y_pred_pers, zero_division=0)
+    p_f1 = f1_score(y_true_w, y_pred_pers, zero_division=0)
+    print(f"\n[2] MCU DEPLOY METRICS (Alarm Persistence = {PERSISTENCE_WINDOWS} windows / {PERSISTENCE_WINDOWS/100:.1f}s)")
+    print(f"  Accuracy:  {p_acc:.4f} | Precision: {p_prec:.4f} | Recall: {p_rec:.4f} | F1: {p_f1:.4f}")
+    
+    # POINT ADJUSTED METRICS (Academic Benchmark)
+    y_pred_w_adj, y_errors_w_adj = apply_point_adjustment(y_true_w, y_pred_w, y_errors_w)
+    pa_acc = accuracy_score(y_true_w, y_pred_w_adj)
+    pa_prec = precision_score(y_true_w, y_pred_w_adj, zero_division=0)
+    pa_rec = recall_score(y_true_w, y_pred_w_adj, zero_division=0)
+    pa_f1 = f1_score(y_true_w, y_pred_w_adj, zero_division=0)
+    try: pa_roc_auc = roc_auc_score(y_true_w, y_errors_w_adj)
+    except: pa_roc_auc = 0.0
+        
+    print(f"\n[3] POINT-ADJUSTED (Academic benchmark - Mismatch forgiven)")
+    print(f"  Accuracy:  {pa_acc:.4f} | Precision: {pa_prec:.4f} | Recall: {pa_rec:.4f} | F1: {pa_f1:.4f} | AUC: {pa_roc_auc:.4f}")
+
+def evaluate_threshold_sweep(y_true, y_errors, name="Model"):
+    """Evaluates different thresholds based on test set percentiles."""
+    print(f"\n--- {name} Threshold Sweep (on Test Normal) ---")
+    
+    # Extract just the normal test errors to calculate percentiles
+    normal_errors = [e for t, e in zip(y_true, y_errors) if t == 0]
+    
+    if len(normal_errors) == 0: return
+    
+    thresholds = {
+        "q90": np.percentile(normal_errors, 90),
+        "q95": np.percentile(normal_errors, 95),
+        "q99": np.percentile(normal_errors, 99)
+    }
+    
+    print(f"{'Threshold':<10} | {'Value':<8} | {'Precision':<9} | {'Recall':<9} | {'F1-Score':<9} | {'Persist. F1':<11}")
+    print("-" * 75)
+    for q, thr in thresholds.items():
+        y_pred = [1 if e > thr else 0 for e in y_errors]
+        prec = precision_score(y_true, y_pred, zero_division=0)
+        rec = recall_score(y_true, y_pred, zero_division=0)
+        f1 = f1_score(y_true, y_pred, zero_division=0)
+        
+        y_pred_pers = apply_alarm_persistence(y_pred, PERSISTENCE_WINDOWS)
+        f1_pers = f1_score(y_true, y_pred_pers, zero_division=0)
+        
+        print(f"{q:<10} | {thr:<8.3f} | {prec:<9.4f} | {rec:<9.4f} | {f1:<9.4f} | {f1_pers:<11.4f}")
+
+def print_per_category_comparison(all_results):
+    """Print per-category comparison table across all models."""
+    model_names = list(all_results.keys())
+    all_cats = sorted(set(
+        cat for results in all_results.values() for cat in results.keys()
+    ))
+    
+    print(f"\n{'='*95}")
+    print(f"       PER-CATEGORY ANOMALY DETECTION RATE (Recall with Alarm Persistence)")
+    print(f"{'='*95}")
+    
+    header = f"{'Category':<18}"
+    for name in model_names:
+        header += f" | {name:>10}"
+    header += f" | {'Anom. Win.':>10}"
+    print(header)
+    print(f"{'-'*95}")
+    
+    for cat in all_cats:
+        row = f"{cat:<18}"
+        for name in model_names:
+            r = all_results[name].get(cat, {}).get('recall_pers', 0) * 100
+            row += f" | {r:>9.1f}%"
+        n_anom = 0
+        for name in model_names:
+            n = all_results[name].get(cat, {}).get('total_anom', 0)
+            if n > 0:
+                n_anom = n
+                break
+        row += f" | {n_anom:>10}"
+        print(row)
+    
+    print(f"{'='*95}")
+
+def evaluate_per_category(model, model_type, scaler, device, threshold):
+    results = {}
+    for cat in ANOMALY_CLASSES:
+        files = get_anomaly_files(cat, max_files=15)
+        if not files: continue
+        
+        cat_true, cat_pred, cat_err = evaluate_anomalous_files(
+            model, model_type, files, scaler, device, threshold
+        )
+        if len(cat_true) > 0:
+            y_true = np.array(cat_true)
+            y_pred = np.array(cat_pred)
+            y_pred_pers = np.array(apply_alarm_persistence(y_pred, PERSISTENCE_WINDOWS))
+            
+            total_anom = int(np.sum(y_true == 1))
+            tp_pers = int(np.sum((y_true == 1) & (y_pred_pers == 1)))
+            rec_pers = tp_pers / total_anom if total_anom > 0 else 0.0
+            
+            results[cat] = {
+                'recall_pers': rec_pers,
+                'total_anom': total_anom
+            }
+    return results
 
 def main():
-    print("Preparing File-Level Metric Evaluation...")
-    scaler = joblib.load("scaler.pkl")
+    print("=" * 80)
+    print("  UR5 Anomaly Detection — Full Evaluation (CNN + LSTM + MLP + Transformer)")
+    print("=" * 80)
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    scaler = joblib.load("scaler.pkl")
     n_features = len(FEATURES)
     
-    # Load CNN
+    # LOAD Q99 THRESHOLDS
+    threshold_cnn = np.load('cnn_q99_threshold.npy')[0]
+    threshold_lstm = np.load('lstm_q99_threshold.npy')[0]
+    threshold_mlp = np.load('mlp_q99_threshold.npy')[0]
+    try:
+        threshold_tr = np.load('transformer_q99_threshold.npy')[0]
+    except FileNotFoundError:
+        threshold_tr = 0.0  # fallback if not trained yet
+        
+    print(f" Thresholds -> CNN: {threshold_cnn:.4f} | LSTM: {threshold_lstm:.4f} | MLP: {threshold_mlp:.4f} | Transformer: {threshold_tr:.4f}")
+    
+    # LOAD MODELS
     cnn_model = CNNAutoencoder(n_features).to(device)
     cnn_model.load_state_dict(torch.load("cnn_autoencoder.pth", weights_only=True))
     
-    # Load LSTM
-    lstm_model = LSTMAutoencoder(n_features, HIDDEN_DIM_LSTM).to(device)
+    lstm_model = LSTMAutoencoder(
+        n_features, HIDDEN_DIM_LSTM, 
+        seq_len=WINDOW_SIZE, n_layers=N_LAYERS_LSTM, dropout=DROPOUT_LSTM
+    ).to(device)
     lstm_model.load_state_dict(torch.load("lstm_autoencoder.pth", weights_only=True))
     
-    # Thresholds: 95th Percentile of the Maximum Error of the ENTIRE HEALTHY FILE
-    # Calculated on X_normal to discard physiological vibrations
-    threshold_cnn = 6.63
-    threshold_lstm = 26.02
+    mlp_model = MLPAutoencoder(
+        WINDOW_SIZE, n_features, bottleneck_dim=BOTTLENECK_DIM_MLP
+    ).to(device)
+    mlp_model.load_state_dict(torch.load("mlp_autoencoder.pth", weights_only=True))
     
-    # Collect files
-    # Limit to 50 healthy files to keep the class balance fair
-    normal_files = get_files(NORMAL_CLASS, max_files=100)
-    print(f"Evaluating {len(normal_files)} Normal traces...")
+    tr_model = TransformerAutoencoder(
+        n_features, d_model=D_MODEL_TR, nhead=NHEAD_TR,
+        num_encoder_layers=NUM_ENCODER_LAYERS_TR, num_decoder_layers=NUM_DECODER_LAYERS_TR,
+        dim_feedforward=DIM_FEEDFORWARD_TR, bottleneck_dim=BOTTLENECK_DIM_TR,
+        seq_len=WINDOW_SIZE, dropout=DROPOUT_TR
+    ).to(device)
     
+    try:
+        tr_model.load_state_dict(torch.load("transformer_autoencoder.pth", weights_only=True))
+        has_transformer = True
+    except FileNotFoundError:
+        print(" [!] Transformer model not found. Skipping its evaluation.")
+        has_transformer = False
+    
+    # Print model sizes
+    models_to_eval = [("CNN", cnn_model), ("LSTM", lstm_model), ("MLP", mlp_model)]
+    if has_transformer: models_to_eval.append(("Transformer", tr_model))
+    
+    for name, model in models_to_eval:
+        params = sum(p.numel() for p in model.parameters())
+        size_kb = params * 4 / 1024
+        print(f" {name}: {params:,} params ({size_kb:.1f} KB float32)")
+    
+    # PURE NORMAL TEST
+    print("\n Loading Pure Isolated X_test_normal.npy...")
+    X_test_normal = np.load("X_test_normal.npy")
+    X_test_tensor = torch.tensor(X_test_normal, dtype=torch.float32).to(device)
+    
+    # ANOMALOUS TESTS
     anomaly_files = []
-    # Collect up to 20 files per anomaly class to have roughly 140 anonalies
     for cat in ANOMALY_CLASSES:
-        files = get_files(cat, max_files=15)
+        files = get_anomaly_files(cat, max_files=15)
         anomaly_files.extend(files)
         
-    print(f"Evaluating {len(anomaly_files)} Anomalous traces across {len(ANOMALY_CLASSES)} categories...")
+    print(f" Evaluating {X_test_normal.shape[0]} unseen Normal windows...")
+    print(f" Evaluating {len(anomaly_files)} unseen Anomalous traces...")
 
-    # Evaluate Normal
     t0 = time.time()
-    res_cnn_n = evaluate_files(cnn_model, "CNN", normal_files, scaler, device, threshold_cnn, is_anomaly=False)
-    res_lstm_n = evaluate_files(lstm_model, "LSTM", normal_files, scaler, device, threshold_lstm, is_anomaly=False)
     
-    # Evaluate Anomalous
-    res_cnn_a = evaluate_files(cnn_model, "CNN", anomaly_files, scaler, device, threshold_cnn, is_anomaly=True)
-    res_lstm_a = evaluate_files(lstm_model, "LSTM", anomaly_files, scaler, device, threshold_lstm, is_anomaly=True)
+    results_all = {}
     
-    print(f"Inference completed in {time.time() - t0:.2f} seconds.")
+    # RUN EVALUATIONS
+    for name, model in models_to_eval:
+        thr = {"CNN": threshold_cnn, "LSTM": threshold_lstm, "MLP": threshold_mlp, "Transformer": threshold_tr}[name]
+        
+        n_true, n_pred, n_err = evaluate_test_set_normal(model, name, X_test_tensor, device, thr)
+        a_true, a_pred, a_err = evaluate_anomalous_files(model, name, anomaly_files, scaler, device, thr)
+        
+        y_true = n_true + a_true
+        y_pred = n_pred + a_pred
+        y_err = list(n_err) + a_err
+        
+        results_all[name] = (y_true, y_pred, y_err)
 
-    # Combine Results per CNN
-    CNN_y_true_f = res_cnn_n[0] + res_cnn_a[0]
-    CNN_y_pred_f = res_cnn_n[1] + res_cnn_a[1]
-    CNN_y_true_w = res_cnn_n[2] + res_cnn_a[2]
-    CNN_y_pred_w = res_cnn_n[3] + res_cnn_a[3]
-    CNN_y_errors_w = res_cnn_n[4] + res_cnn_a[4]
+    print(f"\n Inference complete in {time.time() - t0:.2f} seconds.")
+
+    # PRINT METRICS
+    for name, (y_true, y_pred, y_err) in results_all.items():
+        print_metrics(name, y_true, y_pred, y_err)
+        evaluate_threshold_sweep(y_true, y_err, name=name)
     
-    # Combine Results per LSTM
-    LSTM_y_true_f = res_lstm_n[0] + res_lstm_a[0]
-    LSTM_y_pred_f = res_lstm_n[1] + res_lstm_a[1]
-    LSTM_y_true_w = res_lstm_n[2] + res_lstm_a[2]
-    LSTM_y_pred_w = res_lstm_n[3] + res_lstm_a[3]
-    LSTM_y_errors_w = res_lstm_n[4] + res_lstm_a[4]
-    
-    # Print reports
-    print_metrics("CNN 1D Autoencoder", CNN_y_true_f, CNN_y_pred_f, CNN_y_true_w, CNN_y_pred_w, CNN_y_errors_w)
-    print_metrics("LSTM Autoencoder", LSTM_y_true_f, LSTM_y_pred_f, LSTM_y_true_w, LSTM_y_pred_w, LSTM_y_errors_w)
+    # PER-CATEGORY BREAKDOWN
+    print("\n\n Evaluating per-category detection rates...")
+    cat_results = {}
+    for name, model in models_to_eval:
+        thr = {"CNN": threshold_cnn, "LSTM": threshold_lstm, "MLP": threshold_mlp, "Transformer": threshold_tr}[name]
+        cat_results[name] = evaluate_per_category(model, name, scaler, device, thr)
+        
+    print_per_category_comparison(cat_results)
 
 if __name__ == "__main__":
     main()
