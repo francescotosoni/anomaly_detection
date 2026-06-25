@@ -6,8 +6,10 @@ import joblib
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import os
-from train_CNN import CNNAutoencoder
-from evaluate_metrics import FEATURES, BASE_DIR, WINDOW_SIZE, get_anomaly_files
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from models.train_CNN import CNNAutoencoder
+from utils.evaluate_metrics import FEATURES, BASE_DIR, WINDOW_SIZE, get_anomaly_files
 
 # --- CONFIGURATION ---
 CATEGORIES_TO_PLOT = ["force_stop", "drop_object", "change_weight"]
@@ -154,15 +156,17 @@ def plot_mismatch_for_category(category, model, scaler, device, threshold, ax_ro
 
 
 def main():
-    print("Generating Mismatch Visualizations (one per category)...")
+    print("=" * 80)
+    print("  UR5 Anomaly Detection — Mismatch Plotter (CNN)")
+    print("=" * 80)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    scaler    = joblib.load("scaler.pkl")
-    threshold = np.load('cnn_q99_threshold.npy')[0]
-
-    model = CNNAutoencoder(len(FEATURES)).to(device)
-    model.load_state_dict(torch.load("cnn_autoencoder.pth", map_location=device, weights_only=True))
-    model.eval()
+    scaler = joblib.load("data/scaler.pkl")
+    
+    threshold_cnn = np.load('models/cnn_q99_threshold.npy')[0]
+    cnn_model = CNNAutoencoder(len(FEATURES)).to(device)
+    cnn_model.load_state_dict(torch.load("models/cnn_autoencoder.pth", map_location=device, weights_only=True))
+    cnn_model.eval()
 
     legend_elements = [
         mpatches.Patch(facecolor='#e74c3c', alpha=0.5, label='Label dataset = 1 (declared anomaly)'),
@@ -187,13 +191,13 @@ def main():
         fig.legend(handles=legend_elements, loc='upper right', fontsize=9,
                    bbox_to_anchor=(0.99, 0.94), framealpha=0.92)
 
-        plot_mismatch_for_category(cat, model, scaler, device, threshold,
+        plot_mismatch_for_category(cat, cnn_model, scaler, device, threshold_cnn,
                                    ax_row=axes, show_xlabel=True)
 
         plt.tight_layout(rect=[0, 0, 1, 0.95])
-        plot_path = f"mismatch_{cat}.png"
-        plt.savefig(plot_path, dpi=150, bbox_inches='tight')
-        print(f"  Saved: {plot_path}")
+        save_path = f"pictures/mismatch_{cat}.png"
+        plt.savefig(save_path, dpi=300)
+        print(f" [Saved] Plot per la categoria '{cat}' salvato in {save_path}")
         plt.close(fig)
 
     print("\nDone. Generated:", [f"mismatch_{c}.png" for c in CATEGORIES_TO_PLOT])

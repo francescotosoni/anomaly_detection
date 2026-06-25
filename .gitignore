@@ -1,5 +1,7 @@
 # Python
 __pycache__/
+models/__pycache__/
+utils/__pycache__/
 *.pyc
 .venv/
 venv/
@@ -7,15 +9,17 @@ env/
 
 # Data and Models
 data/
+AutogluonModels/
 RTDE_Python_Client_Library/
 pictures/
+models/LSTM_forecasting.py
 *.npy
 *.pkl
-*.pth
 *.pdf
 *.png
 *.jpg
 *.jpeg
+*.txt
 
 # IDE
 .vscode/

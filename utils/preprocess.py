@@ -5,6 +5,37 @@ import glob
 import os
 import joblib
 
+class CustomCategoryScaler:
+    def __init__(self):
+        # 6 configurazioni (0-5), 6 correnti (6-11), 6 velocità (12-17), 6 forze (18-23)
+        self.categories = {
+            'q': slice(0, 6),
+            'current': slice(6, 12),
+            'qd': slice(12, 18),
+            'tcp': slice(18, 24)
+        }
+        self.means = {}
+        self.stds = {}
+        
+    def fit(self, X):
+        for cat, slc in self.categories.items():
+            cat_data = X[:, slc]
+            self.means[cat] = np.mean(cat_data)
+            self.stds[cat] = np.std(cat_data)
+            if self.stds[cat] == 0:
+                self.stds[cat] = 1.0
+        return self
+                
+    def transform(self, X):
+        X_scaled = np.zeros_like(X)
+        for cat, slc in self.categories.items():
+            X_scaled[:, slc] = (X[:, slc] - self.means[cat]) / self.stds[cat]
+        return X_scaled
+        
+    def fit_transform(self, X):
+        self.fit(X)
+        return self.transform(X)
+
 # --- TARGET DIRECTORIES ---
 BASE_DIR = r"C:\Users\toso9\ur5_data_collection\data\data\stochastic_PnP"
 DIR_NORMAL = os.path.join(BASE_DIR, "normal")
@@ -23,6 +54,8 @@ ANOMALY_TYPES = [
 
 # Selezioniamo le features rilevanti per l'Anomaly Detection
 FEATURES = [
+    'actual_q_0', 'actual_q_1', 'actual_q_2',
+    'actual_q_3', 'actual_q_4', 'actual_q_5',
     'actual_current_0', 'actual_current_1', 'actual_current_2', 
     'actual_current_3', 'actual_current_4', 'actual_current_5',
     'actual_qd_0', 'actual_qd_1', 'actual_qd_2', 
@@ -32,7 +65,7 @@ FEATURES = [
 ]
 
 WINDOW_SIZE = 50
-STEP_SIZE = 10
+STEP_SIZE = 1
 
 def load_and_filter_data(filepath, sep=' '):
     df = pd.read_csv(filepath, sep=sep)
@@ -66,7 +99,7 @@ def process_directory(directory_path, scaler, is_training=False):
         concat_raw = np.vstack(all_raw_data)
         scaler.fit(concat_raw)
         # Salva lo scaler per la fase di deployment / inferenza
-        joblib.dump(scaler, "scaler.pkl")
+        joblib.dump(scaler, "data/scaler.pkl")
 
     all_windows = []
     for data in all_raw_data:
@@ -81,9 +114,9 @@ def process_directory(directory_path, scaler, is_training=False):
 
 def main():
     print("1. Elaborazione della Baseline Globale (stochastic_PnP/normal)...")
-    scaler = RobustScaler()
+    scaler = CustomCategoryScaler()
     X_normal = process_directory(DIR_NORMAL, scaler, is_training=True)
-    np.save("X_normal.npy", X_normal)
+    np.save("data/X_normal.npy", X_normal)
     print(f"   Shape Finestre Sane: {X_normal.shape}")
     
     print("\n2. Elaborazione di Tutte le Categorie di Anomalia...")
@@ -91,7 +124,7 @@ def main():
         anom_dir = os.path.join(BASE_DIR, anomaly)
         X_anom = process_directory(anom_dir, scaler, is_training=False)
         if X_anom.size > 0:
-            np.save(f"X_anomaly_{anomaly}.npy", X_anom)
+            np.save(f"data/X_anomaly_{anomaly}.npy", X_anom)
             print(f"   [Salvato] {anomaly}: {X_anom.shape}")
         else:
             print(f"   [Vuoto] Nessun dato valido per {anomaly}")

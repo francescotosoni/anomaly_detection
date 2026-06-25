@@ -5,9 +5,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import joblib
 import glob
-import os
-from train_CNN import CNNAutoencoder
-from train_LSTM import LSTMAutoencoder
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from models.train_CNN import CNNAutoencoder
+from models.train_LSTM import LSTMAutoencoder
 
 # --- CONFIGURATION ---
 BASE_DIR = r"C:\Users\toso9\ur5_data_collection\data\data\stochastic_PnP"
@@ -16,6 +17,8 @@ WINDOW_SIZE = 50
 HIDDEN_DIM_LSTM = 32
 
 FEATURES = [
+    'actual_q_0', 'actual_q_1', 'actual_q_2',
+    'actual_q_3', 'actual_q_4', 'actual_q_5',
     'actual_current_0', 'actual_current_1', 'actual_current_2', 
     'actual_current_3', 'actual_current_4', 'actual_current_5',
     'actual_qd_0', 'actual_qd_1', 'actual_qd_2', 
@@ -40,18 +43,18 @@ def main():
     raw_data = df.values
     
     # Load Scaler & Models
-    scaler = joblib.load("scaler.pkl")
+    scaler = joblib.load("data/scaler.pkl")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     n_features = len(FEATURES)
     
     # Init CNN
     cnn_model = CNNAutoencoder(n_features).to(device)
-    cnn_model.load_state_dict(torch.load("cnn_autoencoder.pth", weights_only=True))
+    cnn_model.load_state_dict(torch.load("models/cnn_autoencoder.pth", weights_only=True))
     cnn_model.eval()
 
     # Init LSTM
     lstm_model = LSTMAutoencoder(n_features, HIDDEN_DIM_LSTM).to(device)
-    lstm_model.load_state_dict(torch.load("lstm_autoencoder.pth", weights_only=True))
+    lstm_model.load_state_dict(torch.load("models/lstm_autoencoder.pth", weights_only=True))
     lstm_model.eval()
 
     # Fixed thresholds calculated during the evaluation phase
