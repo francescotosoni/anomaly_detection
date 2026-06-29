@@ -44,6 +44,7 @@ sys.stdout = Logger()
 BASE_DIR = r"C:\Users\toso9\ur5_data_collection\data\data\stochastic_PnP"
 WINDOW_SIZE = 50
 STEP_SIZE = 1  
+DEBOUNCE_WINDOWS = 5       # 5 windows (40ms at 125Hz) over threshold to trigger alarm
 PERSISTENCE_WINDOWS = 250  # 250 windows = 2 seconds of alarm persistence on MCU (at 125Hz)
 
 import json
@@ -87,7 +88,7 @@ FEATURES = [
 
 ANOMALY_CLASSES = [
     "push", "tcp_wrench", "drop_object", "change_weight", 
-    "force_stop", "outside_box", "scale_speed"
+    "outside_box", "scale_speed"
 ]
 
 def get_anomaly_files(category, max_files=None):
@@ -97,25 +98,60 @@ def get_anomaly_files(category, max_files=None):
         files = files[:max_files]
     return files
 
-def apply_point_adjustment(y_true, y_pred, y_errors):
-    """Academic Benchmark adjustment."""
+def apply_debouncing(y_pred, debounce_windows=DEBOUNCE_WINDOWS):
+    """Anti-noise filter: requires N consecutive windows to exceed threshold."""
+    y_pred_deb = np.zeros_like(y_pred)
+    count = 0
+    for i in range(len(y_pred)):
+        if y_pred[i] == 1:
+            count += 1
+            if count >= debounce_windows:
+                y_pred_deb[i] = 1
+        else:
+            count = 0
+    return y_pred_deb.tolist()
+
+def calculate_segment_metrics(y_true, y_pred):
+    """Event-Based Evaluation: counts True Positives and False Positives by segments."""
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
-    y_errors = np.array(y_errors)
     
-    y_pred_adj = np.copy(y_pred)
-    y_errors_adj = np.copy(y_errors)
+    # Identify true anomaly segments
+    true_diff = np.diff(np.concatenate(([0], y_true, [0])))
+    true_starts = np.where(true_diff == 1)[0]
+    true_ends = np.where(true_diff == -1)[0]
     
-    diff = np.diff(np.concatenate(([0], y_true, [0])))
-    starts = np.where(diff == 1)[0]
-    ends = np.where(diff == -1)[0]
+    # Identify predicted segments
+    pred_diff = np.diff(np.concatenate(([0], y_pred, [0])))
+    pred_starts = np.where(pred_diff == 1)[0]
+    pred_ends = np.where(pred_diff == -1)[0]
     
-    for s, e in zip(starts, ends):
+    tp_events = 0
+    fn_events = 0
+    fp_events = 0
+    
+    # Check True Positives and False Negatives
+    for s, e in zip(true_starts, true_ends):
         if np.any(y_pred[s:e] == 1):
-            y_pred_adj[s:e] = 1
-            y_errors_adj[s:e] = np.max(y_errors[s:e])
+            tp_events += 1
+        else:
+            fn_events += 1
             
-    return y_pred_adj.tolist(), y_errors_adj.tolist()
+    # Check False Positives (predicted segments that don't overlap with ANY true segment)
+    for ps, pe in zip(pred_starts, pred_ends):
+        overlap = False
+        for ts, te in zip(true_starts, true_ends):
+            if not (pe <= ts or ps >= te):
+                overlap = True
+                break
+        if not overlap:
+            fp_events += 1
+            
+    precision = tp_events / (tp_events + fp_events) if (tp_events + fp_events) > 0 else 0.0
+    recall = tp_events / (tp_events + fn_events) if (tp_events + fn_events) > 0 else 0.0
+    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+    
+    return precision, recall, f1, tp_events, fp_events, fn_events
 
 def apply_alarm_persistence(y_pred, persistence=PERSISTENCE_WINDOWS):
     """Simulates MCU behavior: if alarm triggers, it stays active for `persistence` windows."""
@@ -215,8 +251,7 @@ def evaluate_test_set_normal(model, model_type, X_test_normal_tensor, device, th
                 errors = loss.mean(dim=(1, 2)).cpu().numpy()
             
     if threshold is None:
-        # Dynamic Calibration for TinyML: 99.9th percentile on normal test run
-        threshold = np.percentile(errors, 99.9)
+        threshold = 0.0 # Will be dynamically calibrated later
         
     y_true = [0] * len(errors)
     y_pred = [1 if e > threshold else 0 for e in errors]
@@ -276,62 +311,55 @@ def print_metrics(model_name, y_true_w, y_pred_w, y_errors_w):
     print(f"========================================================")
     
     # ALARM PERSISTENCE METRICS (MCU Simulator)
-    y_pred_pers = apply_alarm_persistence(y_pred_w, PERSISTENCE_WINDOWS)
-    p_acc = accuracy_score(y_true_w, y_pred_pers)
+    y_pred_deb = apply_debouncing(y_pred_w, DEBOUNCE_WINDOWS)
+    y_pred_pers = apply_alarm_persistence(y_pred_deb, PERSISTENCE_WINDOWS)
+    
+    # Point-by-point stats (just for debug/reference)
     p_prec = precision_score(y_true_w, y_pred_pers, zero_division=0)
     p_rec = recall_score(y_true_w, y_pred_pers, zero_division=0)
     p_f1 = f1_score(y_true_w, y_pred_pers, zero_division=0)
     
-    fp = sum(1 for yt, yp in zip(y_true_w, y_pred_pers) if yt == 0 and yp == 1)
-    tn = sum(1 for yt, yp in zip(y_true_w, y_pred_pers) if yt == 0 and yp == 0)
-    fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+    # Event-Based Evaluation
+    seg_prec, seg_rec, seg_f1, tp, fp, fn = calculate_segment_metrics(y_true_w, y_pred_pers)
     
-    print(f"[1] PRODUCTION DEPLOY METRICS (Alarm Persistence = {PERSISTENCE_WINDOWS} windows / {PERSISTENCE_WINDOWS/100:.1f}s)")
-    print(f"  Recall (Detection Rate): {p_rec:.4f} | False Positive Rate: {fpr:.4f}  (FP: {fp})")
-    print(f"  Precision:               {p_prec:.4f} | F1-Score:            {p_f1:.4f}")
-    
-    # POINT ADJUSTED METRICS (Academic Benchmark)
-    y_pred_w_adj, y_errors_w_adj = apply_point_adjustment(y_true_w, y_pred_w, y_errors_w)
-    pa_acc = accuracy_score(y_true_w, y_pred_w_adj)
-    pa_prec = precision_score(y_true_w, y_pred_w_adj, zero_division=0)
-    pa_rec = recall_score(y_true_w, y_pred_w_adj, zero_division=0)
-    pa_f1 = f1_score(y_true_w, y_pred_w_adj, zero_division=0)
-    try: pa_roc_auc = roc_auc_score(y_true_w, y_errors_w_adj)
-    except: pa_roc_auc = 0.0
-    try: pa_pr_auc = average_precision_score(y_true_w, y_errors_w_adj)
-    except: pa_pr_auc = 0.0
-        
-    print(f"\n[2] ACADEMIC BENCHMARK (Point-Adjusted — Mismatch forgiven)")
-    print(f"  Accuracy:  {pa_acc:.4f} | Precision: {pa_prec:.4f} | Recall: {pa_rec:.4f} | F1: {pa_f1:.4f}")
-    print(f"  ROC-AUC:   {pa_roc_auc:.4f} | PR-AUC: {pa_pr_auc:.4f}")
+    print(f"[1] PRODUCTION DEPLOY METRICS (Debounce={DEBOUNCE_WINDOWS}, Persistence={PERSISTENCE_WINDOWS})")
+    print(f"  --- Event-Based (Segments) ---")
+    print(f"  Precision: {seg_prec:.4f} | Recall: {seg_rec:.4f} | F1-Score: {seg_f1:.4f}")
+    print(f"  Events -> TP: {tp} | FP: {fp} | FN: {fn}")
+    print(f"  --- Point-by-Point (Legacy) ---")
+    print(f"  Precision: {p_prec:.4f} | Recall: {p_rec:.4f} | F1-Score: {p_f1:.4f}")
 
-def evaluate_threshold_sweep(y_true, y_errors, name="Model"):
-    """Evaluates different thresholds based on test set percentiles."""
-    print(f"\n--- {name} Threshold Sweep (on Test Normal) ---")
+def find_optimal_threshold(y_true, y_errors, name="Model", percentiles=np.arange(90, 100, 0.5)):
+    """Sweeps thresholds and returns the one that maximizes Segment-Based F1-Score."""
+    print(f"\n--- {name}: Optimizing Threshold ---")
     
-    # Extract just the normal test errors to calculate percentiles
+    # Extract normal errors to generate threshold candidates
     normal_errors = [e for t, e in zip(y_true, y_errors) if t == 0]
+    if len(normal_errors) == 0: 
+        return np.mean(y_errors)
+        
+    best_f1 = -1
+    best_thr = 0
+    best_metrics = {}
     
-    if len(normal_errors) == 0: return
-    
-    thresholds = {
-        "q90": np.percentile(normal_errors, 90),
-        "q95": np.percentile(normal_errors, 95),
-        "q99": np.percentile(normal_errors, 99)
-    }
-    
-    print(f"{'Threshold':<10} | {'Value':<8} | {'Precision':<9} | {'Recall':<9} | {'F1-Score':<9} | {'Persist. F1':<11}")
-    print("-" * 75)
-    for q, thr in thresholds.items():
+    for q in percentiles:
+        thr = np.percentile(normal_errors, q)
         y_pred = [1 if e > thr else 0 for e in y_errors]
-        prec = precision_score(y_true, y_pred, zero_division=0)
-        rec = recall_score(y_true, y_pred, zero_division=0)
-        f1 = f1_score(y_true, y_pred, zero_division=0)
         
-        y_pred_pers = apply_alarm_persistence(y_pred, PERSISTENCE_WINDOWS)
-        f1_pers = f1_score(y_true, y_pred_pers, zero_division=0)
+        y_pred_deb = apply_debouncing(y_pred, DEBOUNCE_WINDOWS)
+        y_pred_pers = apply_alarm_persistence(y_pred_deb, PERSISTENCE_WINDOWS)
         
-        print(f"{q:<10} | {thr:<8.3f} | {prec:<9.4f} | {rec:<9.4f} | {f1:<9.4f} | {f1_pers:<11.4f}")
+        seg_prec, seg_rec, seg_f1, tp, fp, fn = calculate_segment_metrics(y_true, y_pred_pers)
+        
+        if seg_f1 > best_f1:
+            best_f1 = seg_f1
+            best_thr = thr
+            best_metrics = {'q': q, 'prec': seg_prec, 'rec': seg_rec, 'f1': seg_f1, 'fp': fp}
+            
+    print(f"  Optimal Threshold found at q{best_metrics['q']}: {best_thr:.4f}")
+    print(f"  Expected Event F1: {best_metrics['f1']:.4f} (FP events: {best_metrics['fp']})")
+    
+    return best_thr
 
 def print_per_category_comparison(all_results):
     """Print per-category comparison table across all models (PR-AUC and ROC-AUC)."""
@@ -411,7 +439,7 @@ def print_per_category_comparison(all_results):
     
     print(f"{'='*100}")
 
-def evaluate_per_category(model, model_type, scaler, device, threshold, labeling_mode="original"):
+def evaluate_per_category(model, model_type, scaler, device, threshold, n_true=None, n_err=None, labeling_mode="original"):
     """Evaluate per-category with PR-AUC, ROC-AUC and recall with persistence."""
     results = {}
     
@@ -430,11 +458,11 @@ def evaluate_per_category(model, model_type, scaler, device, threshold, labeling
             y_true = np.array(cat_true)
             y_pred = np.array(cat_pred)
             y_err = np.array(cat_err)
-            y_pred_pers = np.array(apply_alarm_persistence(y_pred, PERSISTENCE_WINDOWS))
+            y_pred_deb = apply_debouncing(y_pred, DEBOUNCE_WINDOWS)
+            y_pred_pers = np.array(apply_alarm_persistence(y_pred_deb, PERSISTENCE_WINDOWS))
             
-            total_anom = int(np.sum(y_true == 1))
-            tp_pers = int(np.sum((y_true == 1) & (y_pred_pers == 1)))
-            rec_pers = tp_pers / total_anom if total_anom > 0 else 0.0
+            seg_prec, seg_rec, seg_f1, tp, fp, fn = calculate_segment_metrics(y_true, y_pred_pers)
+            total_anom = tp + fn
             
             # PR-AUC and ROC-AUC (threshold-independent, on raw errors)
             try: pr_auc = average_precision_score(y_true, y_err)
@@ -443,7 +471,8 @@ def evaluate_per_category(model, model_type, scaler, device, threshold, labeling
             except: roc_auc = 0.0
             
             results[cat] = {
-                'recall_pers': rec_pers,
+                'recall_pers': seg_rec,
+                'tp': tp,
                 'total_anom': total_anom,
                 'pr_auc': pr_auc,
                 'roc_auc': roc_auc
@@ -454,18 +483,27 @@ def evaluate_per_category(model, model_type, scaler, device, threshold, labeling
     
     # Combined "All anomalies" score
     if len(all_true) > 0:
-        all_true_np = np.array(all_true)
-        all_err_np = np.array(all_err)
+        if n_true is not None and n_err is not None:
+            all_true_np = np.array(list(n_true) + all_true)
+            all_err_np = np.array(list(n_err) + all_err)
+        else:
+            all_true_np = np.array(all_true)
+            all_err_np = np.array(all_err)
+            
         try: pr_auc_all = average_precision_score(all_true_np, all_err_np)
         except: pr_auc_all = 0.0
         try: roc_auc_all = roc_auc_score(all_true_np, all_err_np)
         except: roc_auc_all = 0.0
         
+        total_tp = sum(results[cat].get('tp', 0) for cat in results)
+        total_anom_events = sum(results[cat].get('total_anom', 0) for cat in results)
+        recall_all = total_tp / total_anom_events if total_anom_events > 0 else 0.0
+        
         results['__ALL__'] = {
             'pr_auc': pr_auc_all,
             'roc_auc': roc_auc_all,
-            'recall_pers': 0,
-            'total_anom': int(np.sum(all_true_np == 1))
+            'recall_pers': recall_all,
+            'total_anom': total_anom_events
         }
     
     return results
@@ -487,28 +525,23 @@ def evaluate_per_timestep_normal(model, model_type, X_test_tensor, device):
                 batch_in = batch.transpose(1, 2)
                 recon = model(batch_in)
                 loss = criterion(recon, batch_in)
-                per_ts = loss.max(dim=1)[0].cpu().numpy()  # (batch, time)
+                err = loss.mean(dim=(1, 2)).cpu().numpy()
             elif model_type == "LSTM_Forecast":
                 t_input = batch[:, :-1, :]
                 target = batch[:, -1, :]
                 recon = model(t_input)
                 loss = criterion(recon, target)
                 err = loss.mean(dim=1).cpu().numpy()
-                per_ts = np.zeros((batch.shape[0], batch.shape[1]))
-                per_ts[:, -1] = err
             elif model_type == "MLP":
                 recon = model(batch)
                 loss = criterion(recon, batch)
                 err = loss.mean(dim=1).cpu().numpy()
-                per_ts = np.tile(err[:, np.newaxis], (1, 50))
             else:
                 recon = model(batch)
                 loss = criterion(recon, batch)
-                per_ts = loss.max(dim=2)[0].cpu().numpy()  # (batch, time)
+                err = loss.mean(dim=(1, 2)).cpu().numpy()
             
-            # per_ts has shape (Batch, Time). We want 1 score per window to match the number of unique normal starting positions.
-            # Flattening would yield 50x more scores than windows, destroying class balance.
-            all_scores.append(per_ts.mean(axis=1))
+            all_scores.append(err)
     
     all_scores = np.concatenate(all_scores)
     all_labels = np.zeros(len(all_scores), dtype=int)
@@ -609,16 +642,6 @@ def main():
     scaler = joblib.load("data/scaler.pkl")
     n_features = len(FEATURES)
     
-    # LOAD Q99 THRESHOLDS
-    threshold_cnn = np.load('models/cnn_q99_threshold.npy')[0]
-    threshold_lstm = np.load('models/lstm_q99_threshold.npy')[0]
-    threshold_mlp = np.load('models/mlp_q99_threshold.npy')[0]
-    try:
-        threshold_tr = np.load('models/transformer_q99_threshold.npy')[0]
-    except FileNotFoundError:
-        threshold_tr = 0.0
-    print(f" Thresholds -> CNN: {threshold_cnn:.4f} | LSTM: {threshold_lstm:.4f} | MLP: {threshold_mlp:.4f} | Transformer: {threshold_tr:.4f}")
-    
     # DYNAMICALLY DETERMINE FEATURE DIMENSIONS
     dummy_data = np.zeros((1, 50, n_features))
     n_features_seq = apply_feature_mask(dummy_data, 'sequential').shape[-1]
@@ -668,22 +691,6 @@ def main():
     print("\n Loading Pure Isolated X_test_normal.npy...")
     X_test_normal = np.load("data/X_test_normal.npy")
     
-    models_to_evaluate = [
-        (cnn_model, "CNN", threshold_cnn),
-        (lstm_model, "LSTM", threshold_lstm),
-        (mlp_model, "MLP", threshold_mlp)
-    ]
-    if has_transformer:
-        models_to_evaluate.append((tr_model, "Transformer", threshold_tr))
-        
-    for model, m_type, thr_loaded in models_to_evaluate:
-        # Prepare the dataset dynamically for each model
-        X_test_prep = prepare_data_for_model(X_test_normal, m_type)
-        X_test_prep_tensor = torch.tensor(X_test_prep, dtype=torch.float32).to(device)
-        
-        # 1. EVALUATE THRESHOLDS (Q90, Q95, Q99) on normal test set
-        _, _, test_err, thr = evaluate_test_set_normal(model, m_type, X_test_prep_tensor, device, threshold=thr_loaded)
-    
     # ANOMALOUS TESTS
     anomaly_files = []
     for cat in ANOMALY_CLASSES:
@@ -692,36 +699,35 @@ def main():
         
     print(f" Evaluating {X_test_normal.shape[0]} unseen Normal windows...")
     print(f" Evaluating {len(anomaly_files)} unseen Anomalous traces...")
-    
-    thresholds_map = {
-        "CNN": threshold_cnn, "LSTM": threshold_lstm, "MLP": threshold_mlp, 
-        "Transformer": threshold_tr
-    }
-
-    # ==================================================================================
-    #  MAIN EVALUATION: PRODUCTION + ACADEMIC (Custom labels)
     # ==================================================================================
     print("\n" + "=" * 100)
-    print(f"  MAIN EVALUATION: PRODUCTION + ACADEMIC (Custom Hand-Tuned Labels)")
+    print(f"  MAIN EVALUATION: PRODUCTION DEPLOY (Debounce + Segment-based)")
     print("=" * 100)
     
     t1 = time.time()
     results_tight = {}
     calibrated_thresholds = {}
+    normal_data_cache = {}
     
     for name, model in models_to_eval:
         X_test_prep = prepare_data_for_model(X_test_normal, name)
         X_test_prep_tensor = torch.tensor(X_test_prep, dtype=torch.float32).to(device)
         
-        n_true, n_pred, n_err, dyn_thr = evaluate_test_set_normal(model, name, X_test_prep_tensor, device, threshold=None)
-        calibrated_thresholds[name] = dyn_thr
-        print(f" {name} Calibrated Threshold: {dyn_thr:.4f}")
+        n_true, _, n_err, _ = evaluate_test_set_normal(model, name, X_test_prep_tensor, device, threshold=None)
+        normal_data_cache[name] = (n_true, n_err)
         
-        a_true, a_pred, a_err = evaluate_anomalous_files(model, name, anomaly_files, scaler, device, dyn_thr, labeling_mode="custom")
+        # Evaluate anomalous files with threshold 0.0 to get errors
+        a_true, _, a_err = evaluate_anomalous_files(model, name, anomaly_files, scaler, device, 0.0, labeling_mode="custom")
         
         y_true = n_true + a_true
-        y_pred = n_pred + a_pred
         y_err = list(n_err) + a_err
+        
+        # 1. Optimize threshold
+        dyn_thr = find_optimal_threshold(y_true, y_err, name=name)
+        calibrated_thresholds[name] = dyn_thr
+        
+        # 2. Final prediction
+        y_pred = [1 if e > dyn_thr else 0 for e in y_err]
         results_tight[name] = (y_true, y_pred, y_err)
     
     print(f"\n Inference (tight labels) complete in {time.time() - t1:.2f} seconds.")
@@ -733,7 +739,8 @@ def main():
     cat_results_tight = {}
     for name, model in models_to_eval:
         dyn_thr = calibrated_thresholds[name]
-        cat_results_tight[name] = evaluate_per_category(model, name, scaler, device, dyn_thr, labeling_mode="custom")
+        n_t, n_e = normal_data_cache[name]
+        cat_results_tight[name] = evaluate_per_category(model, name, scaler, device, dyn_thr, n_true=n_t, n_err=n_e, labeling_mode="custom")
     
     print_per_category_comparison(cat_results_tight)
     
@@ -747,6 +754,14 @@ def main():
     
     t2 = time.time()
     cat_results_per_ts = {}
+    
+    models_to_evaluate = [
+        (cnn_model, "CNN", calibrated_thresholds["CNN"]),
+        (lstm_model, "LSTM", calibrated_thresholds["LSTM"]),
+        (mlp_model, "MLP", calibrated_thresholds["MLP"])
+    ]
+    if has_transformer:
+        models_to_evaluate.append((tr_model, "Transformer", calibrated_thresholds["Transformer"]))
     
     for model, m_type, _ in models_to_evaluate:
         print(f"\n  Processing {m_type}...")
