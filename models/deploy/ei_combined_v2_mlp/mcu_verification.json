@@ -1,0 +1,1009 @@
+{
+  "n": 100,
+  "threshold": 0.02358397845091531,
+  "rel_err_median": 1.538016819481039e-05,
+  "rel_err_max": 0.22368867612754265,
+  "correlation": 0.9965752869081638,
+  "results": [
+    {
+      "file": "normal.000.csv",
+      "label": "normal",
+      "expected": 0.012228729567141272,
+      "got": 0.012714,
+      "rel_err": 0.039682816615934854,
+      "inf_ms": 13.8,
+      "dsp_us": 67,
+      "nn_us": 13517
+    },
+    {
+      "file": "normal.001.csv",
+      "label": "normal",
+      "expected": 0.00795837955956813,
+      "got": 0.007376,
+      "rel_err": 0.07317815834354767,
+      "inf_ms": 13.7,
+      "dsp_us": 64,
+      "nn_us": 13408
+    },
+    {
+      "file": "normal.002.csv",
+      "label": "normal",
+      "expected": 0.012325782976404298,
+      "got": 0.010967,
+      "rel_err": 0.11023908006537737,
+      "inf_ms": 13.7,
+      "dsp_us": 63,
+      "nn_us": 13413
+    },
+    {
+      "file": "normal.003.csv",
+      "label": "normal",
+      "expected": 0.007861326150305104,
+      "got": 0.008541,
+      "rel_err": 0.08645791266000558,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13429
+    },
+    {
+      "file": "normal.004.csv",
+      "label": "normal",
+      "expected": 0.0100935545633547,
+      "got": 0.010094,
+      "rel_err": 4.413080075050311e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13399
+    },
+    {
+      "file": "normal.005.csv",
+      "label": "normal",
+      "expected": 0.012616943204193376,
+      "got": 0.012423,
+      "rel_err": 0.01537164755793756,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13417
+    },
+    {
+      "file": "normal.006.csv",
+      "label": "normal",
+      "expected": 0.015237385254295077,
+      "got": 0.016111,
+      "rel_err": 0.05733363901517623,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13412
+    },
+    {
+      "file": "normal.007.csv",
+      "label": "normal",
+      "expected": 0.0077642727410420775,
+      "got": 0.008638,
+      "rel_err": 0.11253175771883761,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13415
+    },
+    {
+      "file": "normal.008.csv",
+      "label": "normal",
+      "expected": 0.010287661381880753,
+      "got": 0.010967,
+      "rel_err": 0.06603430973299126,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13415
+    },
+    {
+      "file": "normal.009.csv",
+      "label": "normal",
+      "expected": 0.01057882160966983,
+      "got": 0.010385,
+      "rel_err": 0.018321663491580494,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13421
+    },
+    {
+      "file": "normal.010.csv",
+      "label": "normal",
+      "expected": 0.007376059103989974,
+      "got": 0.007958,
+      "rel_err": 0.0788959101066901,
+      "inf_ms": 13.7,
+      "dsp_us": 67,
+      "nn_us": 13401
+    },
+    {
+      "file": "normal.011.csv",
+      "label": "normal",
+      "expected": 0.005629097737255506,
+      "got": 0.005823,
+      "rel_err": 0.034446419620887916,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13402
+    },
+    {
+      "file": "normal.012.csv",
+      "label": "normal",
+      "expected": 0.0100935545633547,
+      "got": 0.011452,
+      "rel_err": 0.13458543549932578,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13418
+    },
+    {
+      "file": "normal.013.csv",
+      "label": "normal",
+      "expected": 0.009996501154091675,
+      "got": 0.009899,
+      "rel_err": 0.009753528018327368,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13410
+    },
+    {
+      "file": "normal.014.csv",
+      "label": "normal",
+      "expected": 0.010190607972617727,
+      "got": 0.011355,
+      "rel_err": 0.11426129142746023,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13402
+    },
+    {
+      "file": "normal.015.csv",
+      "label": "normal",
+      "expected": 0.010481768200406805,
+      "got": 0.009026,
+      "rel_err": 0.13888574642876628,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13414
+    },
+    {
+      "file": "normal.016.csv",
+      "label": "normal",
+      "expected": 0.0048526704631512985,
+      "got": 0.005338,
+      "rel_err": 0.100012877555574,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13397
+    },
+    {
+      "file": "normal.017.csv",
+      "label": "normal",
+      "expected": 0.008540700015146285,
+      "got": 0.008541,
+      "rel_err": 3.512415295967368e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13410
+    },
+    {
+      "file": "normal.018.csv",
+      "label": "normal",
+      "expected": 0.007376059103989974,
+      "got": 0.009026,
+      "rel_err": 0.22368867612754265,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13395
+    },
+    {
+      "file": "normal.019.csv",
+      "label": "normal",
+      "expected": 0.011840515930089168,
+      "got": 0.00922,
+      "rel_err": 0.22131771500175101,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13399
+    },
+    {
+      "file": "normal.020.csv",
+      "label": "normal",
+      "expected": 0.007181952285463922,
+      "got": 0.007182,
+      "rel_err": 6.643672107772579e-06,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13396
+    },
+    {
+      "file": "normal.021.csv",
+      "label": "normal",
+      "expected": 0.008055432968831155,
+      "got": 0.00922,
+      "rel_err": 0.14456914180465513,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13423
+    },
+    {
+      "file": "normal.022.csv",
+      "label": "normal",
+      "expected": 0.010190607972617727,
+      "got": 0.011938,
+      "rel_err": 0.17147083197366977,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13420
+    },
+    {
+      "file": "normal.023.csv",
+      "label": "normal",
+      "expected": 0.009705340926302597,
+      "got": 0.010288,
+      "rel_err": 0.06003488987371168,
+      "inf_ms": 13.7,
+      "dsp_us": 66,
+      "nn_us": 13398
+    },
+    {
+      "file": "normal.024.csv",
+      "label": "normal",
+      "expected": 0.0077642727410420775,
+      "got": 0.008638,
+      "rel_err": 0.11253175771883761,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13408
+    },
+    {
+      "file": "normal.025.csv",
+      "label": "normal",
+      "expected": 0.007570165922516026,
+      "got": 0.00757,
+      "rel_err": 2.1917949715178364e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13411
+    },
+    {
+      "file": "normal.026.csv",
+      "label": "normal",
+      "expected": 0.013587477296823636,
+      "got": 0.014849,
+      "rel_err": 0.09284451231217672,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13412
+    },
+    {
+      "file": "normal.027.csv",
+      "label": "normal",
+      "expected": 0.008249539787357207,
+      "got": 0.008055,
+      "rel_err": 0.02358189576288228,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13405
+    },
+    {
+      "file": "normal.028.csv",
+      "label": "normal",
+      "expected": 0.01106408865598496,
+      "got": 0.012714,
+      "rel_err": 0.14912311310182272,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13428
+    },
+    {
+      "file": "normal.029.csv",
+      "label": "normal",
+      "expected": 0.013199263659771532,
+      "got": 0.013199,
+      "rel_err": 1.997533940735915e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13426
+    },
+    {
+      "file": "normal.030.csv",
+      "label": "normal",
+      "expected": 0.010190607972617727,
+      "got": 0.009414,
+      "rel_err": 0.07620820805829057,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13423
+    },
+    {
+      "file": "normal.031.csv",
+      "label": "normal",
+      "expected": 0.0077642727410420775,
+      "got": 0.006988,
+      "rel_err": 0.09998009690446426,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13413
+    },
+    {
+      "file": "normal.032.csv",
+      "label": "normal",
+      "expected": 0.007473112513253,
+      "got": 0.00757,
+      "rel_err": 0.01296481038860021,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13400
+    },
+    {
+      "file": "normal.033.csv",
+      "label": "normal",
+      "expected": 0.00892891365219839,
+      "got": 0.009026,
+      "rel_err": 0.01087325419231784,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13404
+    },
+    {
+      "file": "normal.034.csv",
+      "label": "normal",
+      "expected": 0.01300515684124548,
+      "got": 0.013976,
+      "rel_err": 0.07465063056183371,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13409
+    },
+    {
+      "file": "normal.035.csv",
+      "label": "normal",
+      "expected": 0.01154935570230009,
+      "got": 0.009899,
+      "rel_err": 0.14289591080577915,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13418
+    },
+    {
+      "file": "normal.036.csv",
+      "label": "normal",
+      "expected": 0.011646409111563116,
+      "got": 0.010385,
+      "rel_err": 0.10830884433818562,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13411
+    },
+    {
+      "file": "normal.037.csv",
+      "label": "normal",
+      "expected": 0.009608287517039571,
+      "got": 0.009511,
+      "rel_err": 0.010125375293676271,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13410
+    },
+    {
+      "file": "normal.038.csv",
+      "label": "normal",
+      "expected": 0.009511234107776545,
+      "got": 0.009317,
+      "rel_err": 0.020421546307827214,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13406
+    },
+    {
+      "file": "normal.039.csv",
+      "label": "normal",
+      "expected": 0.008249539787357207,
+      "got": 0.009705,
+      "rel_err": 0.17642926152963723,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13416
+    },
+    {
+      "file": "normal.040.csv",
+      "label": "normal",
+      "expected": 0.009802394335565623,
+      "got": 0.010385,
+      "rel_err": 0.05943503642987848,
+      "inf_ms": 13.7,
+      "dsp_us": 67,
+      "nn_us": 13405
+    },
+    {
+      "file": "normal.041.csv",
+      "label": "normal",
+      "expected": 0.01106408865598496,
+      "got": 0.011452,
+      "rel_err": 0.035060397297630545,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13417
+    },
+    {
+      "file": "normal.042.csv",
+      "label": "normal",
+      "expected": 0.014946225026506,
+      "got": 0.015431,
+      "rel_err": 0.03243460958431238,
+      "inf_ms": 13.7,
+      "dsp_us": 66,
+      "nn_us": 13388
+    },
+    {
+      "file": "normal.043.csv",
+      "label": "normal",
+      "expected": 0.008249539787357207,
+      "got": 0.007764,
+      "rel_err": 0.05885659077629021,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13421
+    },
+    {
+      "file": "normal.044.csv",
+      "label": "normal",
+      "expected": 0.009511234107776545,
+      "got": 0.009899,
+      "rel_err": 0.04076925116441103,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13399
+    },
+    {
+      "file": "normal.045.csv",
+      "label": "normal",
+      "expected": 0.00844364660588326,
+      "got": 0.008541,
+      "rel_err": 0.01152978075241898,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13419
+    },
+    {
+      "file": "normal.046.csv",
+      "label": "normal",
+      "expected": 0.012131676157878246,
+      "got": 0.012714,
+      "rel_err": 0.04800027914886233,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13409
+    },
+    {
+      "file": "normal.047.csv",
+      "label": "normal",
+      "expected": 0.01203462274861522,
+      "got": 0.012035,
+      "rel_err": 3.13471716281076e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13405
+    },
+    {
+      "file": "normal.048.csv",
+      "label": "normal",
+      "expected": 0.008734806833672337,
+      "got": 0.009317,
+      "rel_err": 0.06665209402036593,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13419
+    },
+    {
+      "file": "normal.049.csv",
+      "label": "normal",
+      "expected": 0.01251988979493035,
+      "got": 0.012617,
+      "rel_err": 0.007756474430707235,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13413
+    },
+    {
+      "file": "anomaly.000.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13401
+    },
+    {
+      "file": "anomaly.001.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13415
+    },
+    {
+      "file": "anomaly.002.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13397
+    },
+    {
+      "file": "anomaly.003.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13421
+    },
+    {
+      "file": "anomaly.004.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13419
+    },
+    {
+      "file": "anomaly.005.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13416
+    },
+    {
+      "file": "anomaly.006.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13417
+    },
+    {
+      "file": "anomaly.007.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13410
+    },
+    {
+      "file": "anomaly.008.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13424
+    },
+    {
+      "file": "anomaly.009.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13406
+    },
+    {
+      "file": "anomaly.010.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13409
+    },
+    {
+      "file": "anomaly.011.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13424
+    },
+    {
+      "file": "anomaly.012.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13408
+    },
+    {
+      "file": "anomaly.013.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 64,
+      "nn_us": 13396
+    },
+    {
+      "file": "anomaly.014.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 63,
+      "nn_us": 13414
+    },
+    {
+      "file": "anomaly.015.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 65,
+      "nn_us": 13423
+    },
+    {
+      "file": "anomaly.016.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13405
+    },
+    {
+      "file": "anomaly.017.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13411
+    },
+    {
+      "file": "anomaly.018.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13425
+    },
+    {
+      "file": "anomaly.019.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13409
+    },
+    {
+      "file": "anomaly.020.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13411
+    },
+    {
+      "file": "anomaly.021.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13408
+    },
+    {
+      "file": "anomaly.022.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13422
+    },
+    {
+      "file": "anomaly.023.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13416
+    },
+    {
+      "file": "anomaly.024.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13422
+    },
+    {
+      "file": "anomaly.025.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13428
+    },
+    {
+      "file": "anomaly.026.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13405
+    },
+    {
+      "file": "anomaly.027.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13410
+    },
+    {
+      "file": "anomaly.028.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13409
+    },
+    {
+      "file": "anomaly.029.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13416
+    },
+    {
+      "file": "anomaly.030.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 67,
+      "nn_us": 13400
+    },
+    {
+      "file": "anomaly.031.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13433
+    },
+    {
+      "file": "anomaly.032.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13412
+    },
+    {
+      "file": "anomaly.033.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13422
+    },
+    {
+      "file": "anomaly.034.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13402
+    },
+    {
+      "file": "anomaly.035.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 64,
+      "nn_us": 13405
+    },
+    {
+      "file": "anomaly.036.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13414
+    },
+    {
+      "file": "anomaly.037.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13416
+    },
+    {
+      "file": "anomaly.038.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13391
+    },
+    {
+      "file": "anomaly.039.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13442
+    },
+    {
+      "file": "anomaly.040.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13417
+    },
+    {
+      "file": "anomaly.041.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13413
+    },
+    {
+      "file": "anomaly.042.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13414
+    },
+    {
+      "file": "anomaly.043.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13412
+    },
+    {
+      "file": "anomaly.044.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13414
+    },
+    {
+      "file": "anomaly.045.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 60,
+      "nn_us": 13408
+    },
+    {
+      "file": "anomaly.046.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13420
+    },
+    {
+      "file": "anomaly.047.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13401
+    },
+    {
+      "file": "anomaly.048.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 62,
+      "nn_us": 13408
+    },
+    {
+      "file": "anomaly.049.csv",
+      "label": "anomaly",
+      "expected": 0.024748619362071622,
+      "got": 0.024749,
+      "rel_err": 1.538016819481039e-05,
+      "inf_ms": 13.7,
+      "dsp_us": 61,
+      "nn_us": 13401
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 models/__pycache__/
+models/deploy/__pycache__/
 utils/__pycache__/
 *.pyc
 .venv/
@@ -13,13 +14,25 @@ AutogluonModels/
 RTDE_Python_Client_Library/
 pictures/
 models/LSTM_forecasting.py
-*.npy
+models/deploy/ei_combined_cnn/
+models/deploy/ei_combined_mlp/
+models/deploy/ei_combined_v2_cnnup_cnn_up/
+models/deploy/ei_test_data/
+models/ICE/combined/
+models/ICE/combined_v2/eval_*.json
+models/ICE/combined_v2/*.md
+models/ICE/task1/
+models/ICE/task2/
+models/ICE/combined_v2_cnnup/
+scratch/
+!**/*_q99_threshold.npy
 *.pkl
 *.pdf
 *.png
 *.jpg
 *.jpeg
 *.txt
+*.zip
 
 # IDE
 .vscode/
@@ -29,3 +42,18 @@ models/LSTM_forecasting.py
 evaluate.py
 verify_data.py
 check_data.py
+analyze_score_vs_speed.py
+auto_refine_labels.py
+plot_generalization.py
+plot_mismatch.py
+plot_timeline.py
+pth_to_onnx.py
+rename_ei_labels.py
+verify_labels.py
+verify_mcu.py
+verify_quantized.py
+report_metrics.py
+rename_ei_library.py
+md_to_pdf.py
+generate_custom_labels.py
+bench_mcu.py

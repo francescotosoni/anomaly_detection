@@ -1,0 +1,125 @@
+{
+  "models": {
+    "mlp": {
+      "q99": 0.013850576244294643,
+      "q99_in_sample": 0.013035976327955723,
+      "val_mean": 0.003562766360118985,
+      "train_mean": 0.0034169687423855066,
+      "val_loss": 0.0035627668752929165,
+      "best_epoch": 45,
+      "converged": true,
+      "config": {
+        "epochs": 150,
+        "patience": 15,
+        "stride": 1,
+        "seed": 42,
+        "batch_size": 128,
+        "lr": 0.001,
+        "window_size": 50
+      }
+    },
+    "cnn": {
+      "q99": 0.07985515892505646,
+      "q99_in_sample": 0.08435378968715668,
+      "val_mean": 0.029594365507364273,
+      "train_mean": 0.03008566051721573,
+      "val_loss": 0.02959436862246485,
+      "best_epoch": 102,
+      "converged": true,
+      "config": {
+        "epochs": 150,
+        "patience": 15,
+        "stride": 1,
+        "seed": 42,
+        "batch_size": 128,
+        "lr": 0.001,
+        "window_size": 50
+      }
+    }
+  },
+  "data_sources": [
+    "data/lab/task1",
+    "data/lab/task2"
+  ],
+  "train_runs": [
+    "task1/run_01.csv",
+    "task1/run_02.csv",
+    "task1/run_03.csv",
+    "task1/run_04.csv",
+    "task1/run_06.csv",
+    "task1/run_08.csv",
+    "task1/run_1.csv",
+    "task1/run_10.csv",
+    "task1/run_11.csv",
+    "task1/run_12.csv",
+    "task1/run_14.csv",
+    "task1/run_15.csv",
+    "task1/run_16.csv",
+    "task1/run_17.csv",
+    "task1/run_18.csv",
+    "task1/run_20.csv",
+    "task2/run_1.csv",
+    "task2/run_10.csv",
+    "task2/run_11.csv",
+    "task2/run_14.csv",
+    "task2/run_15.csv",
+    "task2/run_16.csv",
+    "task2/run_18.csv",
+    "task2/run_19.csv",
+    "task2/run_2.csv",
+    "task2/run_20.csv",
+    "task2/run_3.csv",
+    "task2/run_4.csv",
+    "task2/run_5.csv",
+    "task2/run_6.csv",
+    "task2/run_7.csv"
+  ],
+  "val_runs": [
+    "task1/run_05.csv",
+    "task1/run_07.csv",
+    "task1/run_09.csv",
+    "task1/run_13.csv",
+    "task1/run_19.csv",
+    "task2/run_12.csv",
+    "task2/run_13.csv",
+    "task2/run_17.csv",
+    "task2/run_8.csv",
+    "task2/run_9.csv"
+  ],
+  "n_windows_train": 241401,
+  "n_windows_val": 79904,
+  "scaler": {
+    "q": {
+      "mean": 0.05537966632994173,
+      "std": 2.010959410178795,
+      "slice": [
+        0,
+        6
+      ]
+    },
+    "current": {
+      "mean": 0.5638234574968517,
+      "std": 0.9384230505173067,
+      "slice": [
+        6,
+        12
+      ]
+    },
+    "qd": {
+      "mean": -0.00011751908631514248,
+      "std": 0.1058537292364944,
+      "slice": [
+        12,
+        18
+      ]
+    },
+    "tcp": {
+      "mean": 0.156093843302756,
+      "std": 6.197709319590064,
+      "slice": [
+        18,
+        24
+      ]
+    }
+  }
+}

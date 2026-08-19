@@ -57,7 +57,7 @@ def main():
     train_data = TabularDataset(df_data)
     
     print("\n[3] Training AutoGluon (Time limit: 60s per modello veloce)...")
-    # Impostiamo un time_limit e presets veloci per non farti aspettare ore
+    # Set a time_limit and fast presets so this does not take hours
     predictor = TabularPredictor(label='label', eval_metric='f1').fit(
         train_data, 
         time_limit=120, 
@@ -66,7 +66,7 @@ def main():
     )
     
     print("\n[4] Calcolo Permutation Feature Importance...")
-    # Usa un subset se il dataset è enorme per risparmiare tempo (10k righe)
+    # Use a subset if the dataset is huge, to save time (10k rows)
     sample_size = min(20000, len(train_data))
     importance_data = train_data.sample(n=sample_size, random_state=42)
     importance = predictor.feature_importance(importance_data)
@@ -76,7 +76,7 @@ def main():
     
     # Plotting
     plt.figure(figsize=(10, 8))
-    # Prendi i primi 15 per visibilità
+    # Keep the first 15 for readability
     top_features = importance.head(15)
     plt.barh(top_features.index[::-1], top_features['importance'][::-1], color='mediumpurple')
     plt.title('AutoGluon Permutation Importance (F1-score drop)')

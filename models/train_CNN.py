@@ -54,14 +54,15 @@ class CNNAutoencoder(nn.Module):
         
         # DECODER
         self.decoder = nn.Sequential(
-            nn.Upsample(scale_factor=5), 
-            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=2, dilation=2),
+            # 5 -> 25
+            nn.ConvTranspose1d(in_channels=32, out_channels=64, kernel_size=5, stride=5),
             nn.BatchNorm1d(64),
             nn.ReLU(),
-            nn.Upsample(scale_factor=2), 
-            nn.Conv1d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
+            # 25 -> 50
+            nn.ConvTranspose1d(in_channels=64, out_channels=64, kernel_size=2, stride=2),
             nn.BatchNorm1d(64),
             nn.ReLU(),
+            # Refinement
             nn.Conv1d(in_channels=64, out_channels=n_features, kernel_size=3, padding=1)
         )
 
@@ -69,6 +70,82 @@ class CNNAutoencoder(nn.Module):
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
         return decoded
+
+
+class CNNUpAutoencoder(nn.Module):
+    """
+    Variant of CNNAutoencoder whose decoder uses Upsample + Conv1d instead of
+    ConvTranspose1d. Identical encoder.
+
+    WHY: on ESP32-S3 the ConvTranspose1d CNN measures 644 ms per inference against
+    an 80 ms budget. ESP-NN, Espressif's accelerated kernel library, implements no
+    TransposeConv (only conv, depthwise conv, fully connected, pooling, add, mul,
+    relu, softmax), so those two layers fall back to the TFLite Micro reference
+    implementation. Conv1d is accelerated instead, and nearest-neighbour upsampling
+    is a memory copy with no multiplications.
+
+    The substitution is the one recommended in the literature regardless of speed:
+    ConvTranspose produces checkerboard artefacts when the kernel is not a multiple
+    of the stride. Here kernel and stride coincide (5/5 and 2/2), so that problem
+    did not arise, but capacity stays comparable because the per-layer parameter
+    count is the same for an equal kernel size.
+
+    Spatial sizes are identical to the original: 5 -> 25 -> 50.
+
+    WHY IT IS WRITTEN IN 2D WITH HEIGHT 1 rather than with 1D Conv1d/Upsample:
+    the Edge Impulse ONNX->TFLite converter lifts 3D tensors to 4D and, on Resize,
+    applies the scale factor to BOTH spatial axes. With the 1D version the ONNX was
+    correct ([1,64,25] -> [1,64,50], last axis only), but the resulting TFLite held
+    a 200 KB (1,64,50,64) tensor in place of a 3 KB (1,1,50,64) one: upsampling grew
+    the channel axis too, inflating the arena (260 KB against 31) and the compute
+    time. Writing kernel (1,k) and scale_factor (1,s) explicitly removes the
+    ambiguity, and the graph becomes structurally identical to the original CNN,
+    which converts correctly.
+
+    Input arrives as (batch, channels, time) so the class stays interchangeable
+    with CNNAutoencoder: the height axis is added and removed in here.
+    """
+    def __init__(self, n_features):
+        super(CNNUpAutoencoder, self).__init__()
+
+        # ENCODER - same topology as CNNAutoencoder, in (N, C, 1, L) form
+        self.encoder = nn.Sequential(
+            nn.Conv2d(n_features, 64, kernel_size=(1, 3), padding=(0, 1)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Conv2d(64, 64, kernel_size=(1, 3), padding=(0, 2), dilation=(1, 2)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1, 2)),
+            nn.Conv2d(64, 32, kernel_size=(1, 3), padding=(0, 2), dilation=(1, 2)),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(1, 5))
+        )
+
+        # DECODER - Upsample + Conv in place of ConvTranspose. The scale factor is
+        # (1, s): the height axis must NOT grow.
+        self.decoder = nn.Sequential(
+            # 5 -> 25
+            nn.Upsample(scale_factor=(1, 5), mode='nearest'),
+            nn.Conv2d(32, 64, kernel_size=(1, 3), padding=(0, 1)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            # 25 -> 50
+            nn.Upsample(scale_factor=(1, 2), mode='nearest'),
+            nn.Conv2d(64, 64, kernel_size=(1, 3), padding=(0, 1)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            # Refinement
+            nn.Conv2d(64, n_features, kernel_size=(1, 3), padding=(0, 1))
+        )
+
+    def forward(self, x):
+        x = x.unsqueeze(2)                  # (N, C, L) -> (N, C, 1, L)
+        decoded = self.decoder(self.encoder(x))
+        return decoded.squeeze(2)           # (N, C, 1, L) -> (N, C, L)
+
 
 def main():
     print('1. Loading Data & Splitting (70% Train, 10% Val, 20% Test)...')

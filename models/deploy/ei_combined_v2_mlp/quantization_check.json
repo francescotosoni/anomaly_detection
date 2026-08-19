@@ -1,0 +1,611 @@
+{
+  "n": 100,
+  "threshold": 0.01385,
+  "int8_threshold": 0.03895972147816875,
+  "output_scale": 0.00021644169464707375,
+  "output_zero": -128,
+  "rel_err_median": 1.0616793335043306,
+  "rel_err_max": 10.057132565526933,
+  "results": [
+    {
+      "file": "normal.000.csv",
+      "label": "normal",
+      "float32": 0.00133736,
+      "int8": 0.013202943373471498
+    },
+    {
+      "file": "normal.001.csv",
+      "label": "normal",
+      "float32": 0.00138569,
+      "int8": 0.010822084732353687
+    },
+    {
+      "file": "normal.002.csv",
+      "label": "normal",
+      "float32": 0.00280427,
+      "int8": 0.014285151846706867
+    },
+    {
+      "file": "normal.003.csv",
+      "label": "normal",
+      "float32": 0.00161061,
+      "int8": 0.008874109480530024
+    },
+    {
+      "file": "normal.004.csv",
+      "label": "normal",
+      "float32": 0.00172734,
+      "int8": 0.010172759648412466
+    },
+    {
+      "file": "normal.005.csv",
+      "label": "normal",
+      "float32": 0.0023215,
+      "int8": 0.012553618289530277
+    },
+    {
+      "file": "normal.006.csv",
+      "label": "normal",
+      "float32": 0.00515534,
+      "int8": 0.01666601048782468
+    },
+    {
+      "file": "normal.007.csv",
+      "label": "normal",
+      "float32": 0.00303004,
+      "int8": 0.009739876259118319
+    },
+    {
+      "file": "normal.008.csv",
+      "label": "normal",
+      "float32": 0.00307786,
+      "int8": 0.010605643037706614
+    },
+    {
+      "file": "normal.009.csv",
+      "label": "normal",
+      "float32": 0.00429169,
+      "int8": 0.009090551175177097
+    },
+    {
+      "file": "normal.010.csv",
+      "label": "normal",
+      "float32": 0.00147937,
+      "int8": 0.008008342701941729
+    },
+    {
+      "file": "normal.011.csv",
+      "label": "normal",
+      "float32": 0.00118116,
+      "int8": 0.005843925755470991
+    },
+    {
+      "file": "normal.012.csv",
+      "label": "normal",
+      "float32": 0.0025553,
+      "int8": 0.010605643037706614
+    },
+    {
+      "file": "normal.013.csv",
+      "label": "normal",
+      "float32": 0.00258607,
+      "int8": 0.011254968121647835
+    },
+    {
+      "file": "normal.014.csv",
+      "label": "normal",
+      "float32": 0.0043138,
+      "int8": 0.014718035236001015
+    },
+    {
+      "file": "normal.015.csv",
+      "label": "normal",
+      "float32": 0.00296931,
+      "int8": 0.009739876259118319
+    },
+    {
+      "file": "normal.016.csv",
+      "label": "normal",
+      "float32": 0.00194211,
+      "int8": 0.005411042366176844
+    },
+    {
+      "file": "normal.017.csv",
+      "label": "normal",
+      "float32": 0.00166085,
+      "int8": 0.008441226091235876
+    },
+    {
+      "file": "normal.018.csv",
+      "label": "normal",
+      "float32": 0.00207331,
+      "int8": 0.007142575923353434
+    },
+    {
+      "file": "normal.019.csv",
+      "label": "normal",
+      "float32": 0.00329197,
+      "int8": 0.015150918625295162
+    },
+    {
+      "file": "normal.020.csv",
+      "label": "normal",
+      "float32": 0.00227706,
+      "int8": 0.008224784396588802
+    },
+    {
+      "file": "normal.021.csv",
+      "label": "normal",
+      "float32": 0.00169524,
+      "int8": 0.008874109480530024
+    },
+    {
+      "file": "normal.022.csv",
+      "label": "normal",
+      "float32": 0.00376349,
+      "int8": 0.010822084732353687
+    },
+    {
+      "file": "normal.023.csv",
+      "label": "normal",
+      "float32": 0.00221543,
+      "int8": 0.009523434564471245
+    },
+    {
+      "file": "normal.024.csv",
+      "label": "normal",
+      "float32": 0.00148571,
+      "int8": 0.007142575923353434
+    },
+    {
+      "file": "normal.025.csv",
+      "label": "normal",
+      "float32": 0.00346494,
+      "int8": 0.011471409816294909
+    },
+    {
+      "file": "normal.026.csv",
+      "label": "normal",
+      "float32": 0.00447451,
+      "int8": 0.013419385068118572
+    },
+    {
+      "file": "normal.027.csv",
+      "label": "normal",
+      "float32": 0.00206988,
+      "int8": 0.007791901007294655
+    },
+    {
+      "file": "normal.028.csv",
+      "label": "normal",
+      "float32": 0.0025021,
+      "int8": 0.014285151846706867
+    },
+    {
+      "file": "normal.029.csv",
+      "label": "normal",
+      "float32": 0.00129194,
+      "int8": 0.014285151846706867
+    },
+    {
+      "file": "normal.030.csv",
+      "label": "normal",
+      "float32": 0.00341857,
+      "int8": 0.011904293205589056
+    },
+    {
+      "file": "normal.031.csv",
+      "label": "normal",
+      "float32": 0.00155045,
+      "int8": 0.009306992869824171
+    },
+    {
+      "file": "normal.032.csv",
+      "label": "normal",
+      "float32": 0.00272836,
+      "int8": 0.00865766778588295
+    },
+    {
+      "file": "normal.033.csv",
+      "label": "normal",
+      "float32": 0.00209268,
+      "int8": 0.007359017618000507
+    },
+    {
+      "file": "normal.034.csv",
+      "label": "normal",
+      "float32": 0.00492737,
+      "int8": 0.014068710152059793
+    },
+    {
+      "file": "normal.035.csv",
+      "label": "normal",
+      "float32": 0.00456388,
+      "int8": 0.01038920134305954
+    },
+    {
+      "file": "normal.036.csv",
+      "label": "normal",
+      "float32": 0.00216518,
+      "int8": 0.01385226845741272
+    },
+    {
+      "file": "normal.037.csv",
+      "label": "normal",
+      "float32": 0.00250456,
+      "int8": 0.010822084732353687
+    },
+    {
+      "file": "normal.038.csv",
+      "label": "normal",
+      "float32": 0.00205272,
+      "int8": 0.009090551175177097
+    },
+    {
+      "file": "normal.039.csv",
+      "label": "normal",
+      "float32": 0.00326959,
+      "int8": 0.009739876259118319
+    },
+    {
+      "file": "normal.040.csv",
+      "label": "normal",
+      "float32": 0.0037358,
+      "int8": 0.009523434564471245
+    },
+    {
+      "file": "normal.041.csv",
+      "label": "normal",
+      "float32": 0.00272689,
+      "int8": 0.010605643037706614
+    },
+    {
+      "file": "normal.042.csv",
+      "label": "normal",
+      "float32": 0.006262,
+      "int8": 0.01385226845741272
+    },
+    {
+      "file": "normal.043.csv",
+      "label": "normal",
+      "float32": 0.00232738,
+      "int8": 0.008008342701941729
+    },
+    {
+      "file": "normal.044.csv",
+      "label": "normal",
+      "float32": 0.00186932,
+      "int8": 0.00865766778588295
+    },
+    {
+      "file": "normal.045.csv",
+      "label": "normal",
+      "float32": 0.00213378,
+      "int8": 0.007359017618000507
+    },
+    {
+      "file": "normal.046.csv",
+      "label": "normal",
+      "float32": 0.0051538,
+      "int8": 0.012770059984177351
+    },
+    {
+      "file": "normal.047.csv",
+      "label": "normal",
+      "float32": 0.00419638,
+      "int8": 0.013419385068118572
+    },
+    {
+      "file": "normal.048.csv",
+      "label": "normal",
+      "float32": 0.00292108,
+      "int8": 0.008874109480530024
+    },
+    {
+      "file": "normal.049.csv",
+      "label": "normal",
+      "float32": 0.00534115,
+      "int8": 0.012770059984177351
+    },
+    {
+      "file": "anomaly.000.csv",
+      "label": "anomaly",
+      "float32": 0.93070936,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.001.csv",
+      "label": "anomaly",
+      "float32": 3.38526607,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.002.csv",
+      "label": "anomaly",
+      "float32": 0.84304118,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.003.csv",
+      "label": "anomaly",
+      "float32": 1.22132981,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.004.csv",
+      "label": "anomaly",
+      "float32": 0.68043083,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.005.csv",
+      "label": "anomaly",
+      "float32": 0.84667921,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.006.csv",
+      "label": "anomaly",
+      "float32": 2.45751524,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.007.csv",
+      "label": "anomaly",
+      "float32": 2.1228137,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.008.csv",
+      "label": "anomaly",
+      "float32": 1.37923932,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.009.csv",
+      "label": "anomaly",
+      "float32": 0.89129323,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.010.csv",
+      "label": "anomaly",
+      "float32": 2.59463716,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.011.csv",
+      "label": "anomaly",
+      "float32": 0.85415703,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.012.csv",
+      "label": "anomaly",
+      "float32": 0.72295797,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.013.csv",
+      "label": "anomaly",
+      "float32": 1.07223117,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.014.csv",
+      "label": "anomaly",
+      "float32": 2.84569383,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.015.csv",
+      "label": "anomaly",
+      "float32": 0.80852216,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.016.csv",
+      "label": "anomaly",
+      "float32": 2.84859657,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.017.csv",
+      "label": "anomaly",
+      "float32": 3.15594053,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.018.csv",
+      "label": "anomaly",
+      "float32": 1.44377649,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.019.csv",
+      "label": "anomaly",
+      "float32": 0.48224667,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.020.csv",
+      "label": "anomaly",
+      "float32": 1.99533951,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.021.csv",
+      "label": "anomaly",
+      "float32": 0.9883908,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.022.csv",
+      "label": "anomaly",
+      "float32": 3.73918509,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.023.csv",
+      "label": "anomaly",
+      "float32": 1.36592257,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.024.csv",
+      "label": "anomaly",
+      "float32": 2.53481627,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.025.csv",
+      "label": "anomaly",
+      "float32": 2.84660959,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.026.csv",
+      "label": "anomaly",
+      "float32": 2.86926699,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.027.csv",
+      "label": "anomaly",
+      "float32": 0.84127164,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.028.csv",
+      "label": "anomaly",
+      "float32": 6.38470268,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.029.csv",
+      "label": "anomaly",
+      "float32": 0.57658094,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.030.csv",
+      "label": "anomaly",
+      "float32": 0.85365617,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.031.csv",
+      "label": "anomaly",
+      "float32": 2.22002077,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.032.csv",
+      "label": "anomaly",
+      "float32": 3.77131987,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.033.csv",
+      "label": "anomaly",
+      "float32": 3.01884246,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.034.csv",
+      "label": "anomaly",
+      "float32": 3.81107759,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.035.csv",
+      "label": "anomaly",
+      "float32": 0.98776895,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.036.csv",
+      "label": "anomaly",
+      "float32": 0.3703942,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.037.csv",
+      "label": "anomaly",
+      "float32": 0.50577807,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.038.csv",
+      "label": "anomaly",
+      "float32": 0.01187352,
+      "int8": 0.023808586411178112
+    },
+    {
+      "file": "anomaly.039.csv",
+      "label": "anomaly",
+      "float32": 1.86099136,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.040.csv",
+      "label": "anomaly",
+      "float32": 1.16294706,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.041.csv",
+      "label": "anomaly",
+      "float32": 0.91173697,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.042.csv",
+      "label": "anomaly",
+      "float32": 0.77105176,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.043.csv",
+      "label": "anomaly",
+      "float32": 0.71771801,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.044.csv",
+      "label": "anomaly",
+      "float32": 0.70885915,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.045.csv",
+      "label": "anomaly",
+      "float32": 0.72514236,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.046.csv",
+      "label": "anomaly",
+      "float32": 1.28184569,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.047.csv",
+      "label": "anomaly",
+      "float32": 2.0790441,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.048.csv",
+      "label": "anomaly",
+      "float32": 2.01403046,
+      "int8": 0.055192632135003805
+    },
+    {
+      "file": "anomaly.049.csv",
+      "label": "anomaly",
+      "float32": 1.49273825,
+      "int8": 0.055192632135003805
+    }
+  ]
+}

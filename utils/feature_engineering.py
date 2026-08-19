@@ -6,10 +6,10 @@ import numpy as np
 # 12-17: actual_qd_0 to 5
 # 18-23: actual_TCP_force_0 to 5
 
-# Modelli sequenziali (CNN, LSTM, Transformer) ora usano tutte e 24 le feature fisiche per catturare ogni anomalia.
+# Sequential models (CNN, LSTM, Transformer) now use all 24 physical features, to capture every anomaly.
 SEQ_FEATURES_TO_DROP = []
 
-# Modelli tabulari (MLP) non capiscono le velocità istantanee (qd_2..5) e la corrente 3 (ultime classificate AutoGluon).
+# Tabular models (MLP) do not make sense of the instantaneous velocities (qd_2..5) and current 3 (lowest ranked by AutoGluon).
 TAB_FEATURES_TO_DROP = [9, 14, 15, 16, 17]
 
 def apply_feature_mask(data, model_type):

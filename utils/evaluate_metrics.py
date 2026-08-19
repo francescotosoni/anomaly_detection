@@ -870,12 +870,12 @@ def main():
     print(f"{'='*100}")
     
     # ==================================================================================
-    #  CONFRONTO FINALE: PAPER vs OURS (per-window) vs OURS (per-timestep)
+    #  FINAL COMPARISON: PAPER vs OURS (per-window) vs OURS (per-timestep)
     # ==================================================================================
     print(f"\n{'='*110}")
-    print(f"       CONFRONTO CON GRAABÆK ET AL. (Table 12 — All anomalies)")
+    print(f"       COMPARISON WITH GRAABAEK ET AL. (Table 12 - All anomalies)")
     print(f"{'='*110}")
-    print(f"{'Metodo':<25} | {'PR-AUC':>8} | {'ROC-AUC':>8} | {'Note':>35}")
+    print(f"{'Method':<25} | {'PR-AUC':>8} | {'ROC-AUC':>8} | {'Notes':>35}")
     print(f"{'-'*90}")
     
     paper_results = [

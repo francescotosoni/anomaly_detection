@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Real-time anomaly detection dashboard for UR5 robotic arm using Edge AI">
+  <title>UR5 Anomaly Detection — Lab Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ========== NAVBAR ========== -->
+  <nav class="navbar">
+    <div class="navbar__brand">
+      <div class="navbar__logo">AI</div>
+      <div>
+        <div class="navbar__title">UR5 Anomaly Detection</div>
+        <div class="navbar__subtitle">Real-Time Lab Monitor</div>
+      </div>
+    </div>
+
+    <div class="navbar__controls">
+      <div id="statusBadge" class="status-badge status-badge--disconnected">
+        <span class="status-badge__dot"></span>
+        <span id="statusText">Disconnected</span>
+      </div>
+
+      <button id="btnConnect" class="btn btn--primary" onclick="handleConnect()">
+        ⚡ Serial (USB)
+      </button>
+
+      <button id="btnBridge" class="btn btn--primary" onclick="handleBridge()">
+        🌐 Bridge (Lab)
+      </button>
+
+      <button id="btnSimulate" class="btn btn--simulate" onclick="handleSimulate()">
+        🧪 Simulate
+      </button>
+
+      <button id="btnStop" class="btn btn--danger" onclick="handleStop()" disabled>
+        ■ Stop
+      </button>
+    </div>
+  </nav>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main class="main">
+
+    <!-- Global Status Banner -->
+    <div id="globalStatus" class="global-status global-status--idle">
+      <div class="global-status__info">
+        <span id="statusLabel" class="global-status__label">⏸ Waiting for data...</span>
+        <span id="thresholdDisplay" class="global-status__threshold">Threshold: 0.10</span>
+      </div>
+      <span id="scoreDisplay" class="global-status__score">—</span>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+      <span class="controls-bar__label">Joint:</span>
+      <select id="jointSelect" class="select" onchange="handleJointChange()">
+        <option value="0">Joint 0 (Base)</option>
+        <option value="1">Joint 1 (Shoulder)</option>
+        <option value="2">Joint 2 (Elbow)</option>
+        <option value="3">Joint 3 (Wrist 1)</option>
+        <option value="4">Joint 4 (Wrist 2)</option>
+        <option value="5">Joint 5 (Wrist 3)</option>
+      </select>
+
+      <span class="controls-bar__label" style="margin-left: 1rem;">Threshold:</span>
+      <!-- step 0.0001: le soglie hanno 4-5 decimali, con step 0.001 il browser le
+           segnala come non valide.
+           ATTENZIONE al modo del bridge: gli score int8 della board sono piu' alti
+           di quelli float32 del PC, quindi la soglia NON e' la stessa.
+             --mode esp32 (board, int8) : 0.0390  <- default qui
+             --mode pc    (float32)     : 0.0273
+           Entrambe sono il quantile q99.95 dell'errore sulle run normali held-out,
+           calcolato separatamente sui due modelli. -->
+      <input id="thresholdInput" class="threshold-input" type="number" step="0.0001" min="0" max="1" value="0.0390"
+             onchange="handleThresholdChange()">
+
+      <!-- Debounce in MILLISECONDI: lo score si aggiorna ogni 80 ms ma arriva
+           ripetuto ~2.5 volte, quindi contare i messaggi sarebbe fuorviante. -->
+      <span class="controls-bar__label" style="margin-left: 1rem;">Debounce (ms):</span>
+      <input id="debounceInput" class="threshold-input" type="number" step="10" min="0" max="5000" value="40"
+             onchange="handleDebounceChange()">
+
+      <span class="controls-bar__label" style="margin-left: 1rem;">Buffer:</span>
+      <select id="bufferSelect" class="select" onchange="handleBufferChange()">
+        <option value="100">100 pts</option>
+        <option value="200" selected>200 pts</option>
+        <option value="500">500 pts</option>
+      </select>
+    </div>
+
+    <!-- Hero Chart: Anomaly Score -->
+    <div class="card hero-chart">
+      <div class="card__header">
+        <span class="card__title">
+          <span class="card__title-dot" style="background: var(--color-score-safe);"></span>
+          Anomaly Score (MSE)
+        </span>
+      </div>
+      <div class="stats-row">
+        <div class="stat">
+          <span class="stat__label">Current</span>
+          <span id="statScoreCurrent" class="stat__value">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat__label">Mean</span>
+          <span id="statScoreMean" class="stat__value">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat__label">Max</span>
+          <span id="statScoreMax" class="stat__value">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat__label">Anomalies</span>
+          <span id="statAnomalyCount" class="stat__value">0</span>
+        </div>
+      </div>
+      <div class="card__body">
+        <div class="card__chart-container">
+          <canvas id="chartScore"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sensor Grid (2x2) -->
+    <div class="sensor-grid">
+
+      <!-- Positions -->
+      <div class="card sensor-card card--positions">
+        <div class="card__header">
+          <span class="card__title">
+            <span class="card__title-dot" style="background: var(--color-positions);"></span>
+            Positions (rad)
+          </span>
+          <span id="statPositionValue" class="stat__value" style="font-size: 0.75rem;">—</span>
+        </div>
+        <div class="card__body">
+          <div class="card__chart-container">
+            <canvas id="chartPositions"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Currents -->
+      <div class="card sensor-card card--currents">
+        <div class="card__header">
+          <span class="card__title">
+            <span class="card__title-dot" style="background: var(--color-currents);"></span>
+            Currents (A)
+          </span>
+          <span id="statCurrentValue" class="stat__value" style="font-size: 0.75rem;">—</span>
+        </div>
+        <div class="card__body">
+          <div class="card__chart-container">
+            <canvas id="chartCurrents"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Velocities -->
+      <div class="card sensor-card card--velocities">
+        <div class="card__header">
+          <span class="card__title">
+            <span class="card__title-dot" style="background: var(--color-velocities);"></span>
+            Velocities (rad/s)
+          </span>
+          <span id="statVelocityValue" class="stat__value" style="font-size: 0.75rem;">—</span>
+        </div>
+        <div class="card__body">
+          <div class="card__chart-container">
+            <canvas id="chartVelocities"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- TCP Forces -->
+      <div class="card sensor-card card--tcp">
+        <div class="card__header">
+          <span class="card__title">
+            <span class="card__title-dot" style="background: var(--color-tcp);"></span>
+            TCP Forces (N / Nm)
+          </span>
+          <span id="statTCPValue" class="stat__value" style="font-size: 0.75rem;">—</span>
+        </div>
+        <div class="card__body">
+          <div class="card__chart-container">
+            <canvas id="chartTCP"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /sensor-grid -->
+
+  </main>
+
+  <footer class="footer">
+    UR5 Anomaly Detection System — Edge AI Lab Dashboard &copy; 2026
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -7,7 +7,7 @@ import joblib
 
 class CustomCategoryScaler:
     def __init__(self):
-        # 6 configurazioni (0-5), 6 correnti (6-11), 6 velocità (12-17), 6 forze (18-23)
+        # 6 joint positions (0-5), 6 currents (6-11), 6 velocities (12-17), 6 forces (18-23)
         self.categories = {
             'q': slice(0, 6),
             'current': slice(6, 12),
@@ -40,7 +40,7 @@ class CustomCategoryScaler:
 BASE_DIR = r"C:\Users\toso9\ur5_data_collection\data\data\stochastic_PnP"
 DIR_NORMAL = os.path.join(BASE_DIR, "normal")
 
-# Tutte le categorie di anomalia da analizzare
+# Every anomaly category to analyse
 ANOMALY_TYPES = [
     "change_weight", 
     "drop_object", 
@@ -52,7 +52,7 @@ ANOMALY_TYPES = [
     "tcp_wrench"
 ]
 
-# Selezioniamo le features rilevanti per l'Anomaly Detection
+# Select the features relevant to anomaly detection
 FEATURES = [
     'actual_q_0', 'actual_q_1', 'actual_q_2',
     'actual_q_3', 'actual_q_4', 'actual_q_5',
@@ -81,7 +81,7 @@ def create_sliding_windows(data, window_size, step_size):
     return np.array(windows)
 
 def process_directory(directory_path, scaler, is_training=False):
-    # Supportiamo sia i pattern diretti che quelli in cartelle "test/" interne
+    # Support both direct patterns and those inside inner 'test/' folders
     csv_files = glob.glob(os.path.join(directory_path, "*.csv")) + glob.glob(os.path.join(directory_path, "test", "*.csv"))
     print(f"  -> Trovati {len(csv_files)} file in {os.path.basename(directory_path)}")
     
@@ -95,10 +95,10 @@ def process_directory(directory_path, scaler, is_training=False):
         return np.array([])
 
     if is_training:
-        print("  -> Fittaggio dello scaler su tutti i dati sani...")
+        print("  -> Fitting the scaler on all healthy data...")
         concat_raw = np.vstack(all_raw_data)
         scaler.fit(concat_raw)
-        # Salva lo scaler per la fase di deployment / inferenza
+        # Save the scaler for the deployment / inference stage
         joblib.dump(scaler, "data/scaler.pkl")
 
     all_windows = []
@@ -117,19 +117,19 @@ def main():
     scaler = CustomCategoryScaler()
     X_normal = process_directory(DIR_NORMAL, scaler, is_training=True)
     np.save("data/X_normal.npy", X_normal)
-    print(f"   Shape Finestre Sane: {X_normal.shape}")
+    print(f"   Healthy windows shape: {X_normal.shape}")
     
-    print("\n2. Elaborazione di Tutte le Categorie di Anomalia...")
+    print("\n2. Processing all anomaly categories...")
     for anomaly in ANOMALY_TYPES:
         anom_dir = os.path.join(BASE_DIR, anomaly)
         X_anom = process_directory(anom_dir, scaler, is_training=False)
         if X_anom.size > 0:
             np.save(f"data/X_anomaly_{anomaly}.npy", X_anom)
-            print(f"   [Salvato] {anomaly}: {X_anom.shape}")
+            print(f"   [Saved] {anomaly}: {X_anom.shape}")
         else:
-            print(f"   [Vuoto] Nessun dato valido per {anomaly}")
+            print(f"   [Empty] No valid data for {anomaly}")
             
-    print("\n✅ Dataset completi estratti e normalizzati!")
+    print("\n[OK] Complete datasets extracted and normalised!")
 
 if __name__ == "__main__":
     main()
