@@ -1,3 +1,4 @@
+import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -7,7 +8,6 @@ import time
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from sklearn.model_selection import train_test_split
 from utils.feature_engineering import apply_feature_mask, extract_tabular_features
 
 # --- CONFIGURATION ---
@@ -58,28 +58,73 @@ class MLPAutoencoder(nn.Module):
         decoded = self.decoder(encoded)
         return decoded
 
+def tabular_chunked(X, idx, chunk=20000):
+    """Feature-mask + statistics for the given window indices, in chunks.
+
+    The window array is several GB; the 95-dimensional tabular representation is
+    a few hundred MB. Materialising the windows for a whole split would need
+    twice the array in RAM, so the reduction is applied chunk by chunk and only
+    the result is kept.
+    """
+    out = []
+    for s in range(0, len(idx), chunk):
+        block = np.asarray(X[idx[s:s + chunk]])
+        out.append(extract_tabular_features(apply_feature_mask(block, model_type='tabular')))
+    return np.concatenate(out) if out else np.empty((0, 0))
+
+
+def write_subset(X, idx, path, chunk=20000):
+    """Copy the selected windows into a .npy on disk without loading the source."""
+    out = np.lib.format.open_memmap(path, mode='w+', dtype=X.dtype,
+                                    shape=(len(idx),) + X.shape[1:])
+    for s in range(0, len(idx), chunk):
+        out[s:s + chunk] = X[idx[s:s + chunk]]
+    out.flush()
+    del out
+
+
 def main():
+    parser = argparse.ArgumentParser(description='Train the MLP autoencoder on nominal windows')
+    parser.add_argument('--data', default=None,
+                        help='window array to train on (default: data/X_normal<suffix>.npy)')
+    parser.add_argument('--suffix', default='',
+                        help='appended to every input and output name, e.g. _v2')
+    parser.add_argument('--seed', type=int, default=42)
+    args = parser.parse_args()
+
+    sfx = args.suffix
+    data_path = args.data or f'data/X_normal{sfx}.npy'
+    model_path = f'models/mlp_autoencoder{sfx}.pth'
+    thr_path = f'models/mlp{sfx}_q99_threshold.npy'
+    test_path = f'data/X_test_normal{sfx}.npy'
+
     print('1. Loading Data & Splitting (70% Train, 10% Val, 20% Test)...')
-    X_normal_all = np.load('data/X_normal.npy')
-    
-    # SPLIT: 80% (Train+Val) and 20% (Test)
-    X_temp, X_test_normal = train_test_split(X_normal_all, test_size=0.20, random_state=42)
-    # SPLIT: 80% splits into 70% total (Train) and 10% total (Val) => 10/80 = 0.125
-    X_train, X_val = train_test_split(X_temp, test_size=0.125, random_state=42)
-    
-    # 1. Mascheramento Feature (Tabular)
-    X_train = apply_feature_mask(X_train, model_type='tabular')
-    X_val = apply_feature_mask(X_val, model_type='tabular')
-    
-    # 2. Estrazione Statistiche (Feature Engineering)
-    X_train = extract_tabular_features(X_train)
-    X_val = extract_tabular_features(X_val)
-    
+    print(f'   source: {data_path}')
+    # Memory-mapped: the array is read through the split indices, never as a whole.
+    X_normal_all = np.load(data_path, mmap_mode='r')
+    n = len(X_normal_all)
+
+    # Same proportions and seed as before, expressed on indices so that the
+    # windows themselves are never duplicated in RAM.
+    perm = np.random.RandomState(args.seed).permutation(n)
+    n_test = int(np.ceil(n * 0.20))
+    idx_test = np.sort(perm[:n_test])
+    rest = perm[n_test:]
+    n_val = int(np.ceil(len(rest) * 0.125))
+    idx_val = np.sort(rest[:n_val])
+    idx_train = np.sort(rest[n_val:])
+
+    print(f'   writing held-out nominal test split to {test_path}')
+    write_subset(X_normal_all, idx_test, test_path)
+
+    X_train = tabular_chunked(X_normal_all, idx_train)
+    X_val = tabular_chunked(X_normal_all, idx_val)
+
     input_dim = X_train.shape[1]
-    
-    print(f'   Healthy Train: {X_train.shape[0]} | Healthy Val: {X_val.shape[0]} | Healthy Test: {X_test_normal.shape[0]}')
+
+    print(f'   Healthy Train: {X_train.shape[0]} | Healthy Val: {X_val.shape[0]} | Healthy Test: {len(idx_test)}')
     print(f'   Input Dim: {input_dim} (19 features * 5 statistics)')
-    
+
     X_train_pt = torch.tensor(X_train, dtype=torch.float32)
     X_val_pt = torch.tensor(X_val, dtype=torch.float32)
     
@@ -129,7 +174,7 @@ def main():
         
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), 'models/mlp_autoencoder.pth')
+            torch.save(model.state_dict(), model_path)
             patience_counter = 0
         else:
             patience_counter += 1
@@ -143,7 +188,7 @@ def main():
             break
             
     print('\n3. Calculating Threshold (Q99) on Validation Set...')
-    model.load_state_dict(torch.load('models/mlp_autoencoder.pth', weights_only=True))
+    model.load_state_dict(torch.load(model_path, weights_only=True))
     model.eval()
     
     val_errors = []
@@ -160,7 +205,7 @@ def main():
     q99 = np.percentile(val_errors, 99)
     print(f'   Threshold (Q99): {q99:.6f}')
     
-    np.save('models/mlp_q99_threshold.npy', np.array([q99]))
+    np.save(thr_path, np.array([q99]))
     print('\n[DONE] Model and threshold saved in models/')
 
 if __name__ == '__main__':

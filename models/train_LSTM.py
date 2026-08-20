@@ -7,8 +7,8 @@ import time
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from sklearn.model_selection import train_test_split
 from utils.feature_engineering import apply_feature_mask
+from utils import window_dataset
 
 # --- CONFIGURATION ---
 BATCH_SIZE = 64
@@ -82,32 +82,27 @@ class LSTMAutoencoder(nn.Module):
         return output
 
 def main():
+    args = window_dataset.build_args('LSTM')
+    sfx = args.suffix
+    data_path = args.data or f'data/X_normal{sfx}.npy'
+    model_path = f'models/lstm_autoencoder{sfx}.pth'
+    thr_path = f'models/lstm{sfx}_q99_threshold.npy'
+
     print('1. Loading Data & Splitting (70% Train, 10% Val, 20% Test)...')
-    X_normal_all = np.load('data/X_normal.npy')
-    
-    # SPLIT: 80% (Train+Val) and 20% (Test)
-    X_temp, X_test_normal = train_test_split(X_normal_all, test_size=0.20, random_state=42)
-    # SPLIT: 80% splits into 70% total (Train) and 10% total (Val) => 10/80 = 0.125
-    X_train, X_val = train_test_split(X_temp, test_size=0.125, random_state=42)
-    
-    # APPLY FEATURE MASK FOR SEQUENTIAL MODELS
-    X_train = apply_feature_mask(X_train, model_type='sequential')
-    X_val = apply_feature_mask(X_val, model_type='sequential')
-    
-    n_features = X_train.shape[2]
-    
-    print(f'   Healthy Train: {X_train.shape[0]} | Healthy Val: {X_val.shape[0]} | Healthy Test: {X_test_normal.shape[0]}')
-    
-    data_tensor_train = torch.tensor(X_train, dtype=torch.float32)
-    data_tensor_val = torch.tensor(X_val, dtype=torch.float32)
-    
-    train_loader = DataLoader(TensorDataset(data_tensor_train, data_tensor_train), batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(TensorDataset(data_tensor_val, data_tensor_val), batch_size=BATCH_SIZE, shuffle=False)
+    print(f'   source: {data_path}')
+    train_ds, val_ds, n_test = window_dataset.prepare(
+        data_path, sfx, test_path=f'data/X_test_normal{sfx}.npy', seed=args.seed,
+        model_type='sequential', channels_first=False)
+    n_features = train_ds.n_features
+
+    print(f'   Healthy Train: {len(train_ds)} | Healthy Val: {len(val_ds)} | Healthy Test: {n_test}')
+
+    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=args.workers)
+    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.workers)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'   Using device: {device}')
     
-    n_features = X_train.shape[2]
     model = LSTMAutoencoder(
         n_features, HIDDEN_DIM, 
         seq_len=SEQ_LEN, n_layers=N_LAYERS, dropout=DROPOUT
@@ -121,7 +116,26 @@ def main():
     criterion_train = nn.MSELoss()
     criterion_eval = nn.MSELoss(reduction='none')
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
-    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=15, T_mult=2)
+    # ReduceLROnPlateau, matching train_MLP.py, rather than CosineAnnealingWarmRestarts.
+    #
+    # WHY: warm restarts put the validation minimum at the end of each cosine cycle,
+    # and with T_0=15, T_mult=2 the cycle boundaries fall at epochs 15, 45, 105.
+    # An early-stopping patience of 15 epochs therefore expires mid-cycle, before the
+    # learning rate has annealed far enough to beat the previous cycle's minimum, so
+    # the run can never complete the cycle after its best one. Measured on the
+    # branch-inclusive dataset: the CNN peaked at epoch 14 (end of cycle 1) and stopped
+    # at 29, never finishing cycle 2; the LSTM peaked at epoch 45 (end of cycle 2) and
+    # stopped at 60, never finishing cycle 3. Both had a still-decreasing training loss
+    # at the stop, i.e. they were truncated, not overfitting.
+    #
+    # Fixing the patience instead would need it longer than the longest cycle, and would
+    # leave the three architectures on different schedules - which confounds an
+    # architecture comparison with a training-recipe difference. A plateau scheduler has
+    # no restarts, so patience and schedule cannot fight each other.
+    #
+    # The optimiser, weight decay and gradient clipping are left as they were: they are
+    # per-architecture choices, not the cause of the truncation.
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
     
     best_val_loss = float('inf')
     best_threshold = 0.0
@@ -145,7 +159,6 @@ def main():
             train_loss += loss.item() * batch_x.size(0)
             
         train_loss /= len(train_loader.dataset)
-        scheduler.step()
         
         model.eval()
         val_loss = 0.0
@@ -165,6 +178,7 @@ def main():
                 val_errors.extend(window_errors)
                 
         val_loss /= len(val_loader.dataset)
+        scheduler.step(val_loss)
         
         q99_threshold = np.percentile(val_errors, 99)
         current_lr = optimizer.param_groups[0]['lr']
@@ -175,8 +189,8 @@ def main():
             best_val_loss = val_loss
             best_threshold = q99_threshold
             patience_counter = 0
-            torch.save(model.state_dict(), 'models/lstm_autoencoder.pth')
-            np.save('models/lstm_q99_threshold.npy', np.array([best_threshold]))
+            torch.save(model.state_dict(), model_path)
+            np.save(thr_path, np.array([best_threshold]))
         else:
             patience_counter += 1
             if patience_counter >= EARLY_STOP_PATIENCE:

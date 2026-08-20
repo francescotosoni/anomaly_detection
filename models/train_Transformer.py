@@ -7,8 +7,8 @@ import time
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from sklearn.model_selection import train_test_split
 from utils.feature_engineering import apply_feature_mask
+from utils import window_dataset
 
 # --- CONFIGURATION ---
 BATCH_SIZE = 64
@@ -113,32 +113,27 @@ class TransformerAutoencoder(nn.Module):
         return output
 
 def main():
+    args = window_dataset.build_args('Transformer')
+    sfx = args.suffix
+    data_path = args.data or f'data/X_normal{sfx}.npy'
+    model_path = f'models/transformer_autoencoder{sfx}.pth'
+    thr_path = f'models/transformer{sfx}_q99_threshold.npy'
+
     print('1. Loading Data & Splitting (70% Train, 10% Val, 20% Test)...')
-    X_normal_all = np.load('data/X_normal.npy')
-    
-    # SPLIT: 80% (Train+Val) and 20% (Test)
-    X_temp, X_test_normal = train_test_split(X_normal_all, test_size=0.20, random_state=42)
-    # SPLIT: 80% splits into 70% total (Train) and 10% total (Val) => 10/80 = 0.125
-    X_train, X_val = train_test_split(X_temp, test_size=0.125, random_state=42)
-    
-    # APPLY FEATURE MASK FOR SEQUENTIAL MODELS
-    X_train = apply_feature_mask(X_train, model_type='sequential')
-    X_val = apply_feature_mask(X_val, model_type='sequential')
-    
-    n_features = X_train.shape[2]
-    
-    print(f'   Healthy Train: {X_train.shape[0]} | Healthy Val: {X_val.shape[0]} | Healthy Test: {X_test_normal.shape[0]}')
-    
-    data_tensor_train = torch.tensor(X_train, dtype=torch.float32)
-    data_tensor_val = torch.tensor(X_val, dtype=torch.float32)
-    
-    train_loader = DataLoader(TensorDataset(data_tensor_train, data_tensor_train), batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(TensorDataset(data_tensor_val, data_tensor_val), batch_size=BATCH_SIZE, shuffle=False)
+    print(f'   source: {data_path}')
+    train_ds, val_ds, n_test = window_dataset.prepare(
+        data_path, sfx, test_path=f'data/X_test_normal{sfx}.npy', seed=args.seed,
+        model_type='sequential', channels_first=False)
+    n_features = train_ds.n_features
+
+    print(f'   Healthy Train: {len(train_ds)} | Healthy Val: {len(val_ds)} | Healthy Test: {n_test}')
+
+    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=args.workers)
+    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=args.workers)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'   Using device: {device}')
     
-    n_features = X_train.shape[2]
     model = TransformerAutoencoder(
         n_features, d_model=D_MODEL, nhead=NHEAD,
         num_encoder_layers=NUM_ENCODER_LAYERS, num_decoder_layers=NUM_DECODER_LAYERS,
@@ -215,8 +210,8 @@ def main():
             best_val_loss = val_loss
             best_threshold = q99_threshold
             patience_counter = 0
-            torch.save(model.state_dict(), 'models/transformer_autoencoder.pth')
-            np.save('models/transformer_q99_threshold.npy', np.array([best_threshold]))
+            torch.save(model.state_dict(), model_path)
+            np.save(thr_path, np.array([best_threshold]))
         else:
             patience_counter += 1
             if patience_counter >= EARLY_STOP_PATIENCE:
